@@ -8,7 +8,8 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
-    "backfill:agenda": "tsx scripts/agenda-backfill.ts"
+    "backfill:agenda": "tsx scripts/agenda-backfill.ts",
+    "backfill:philly-inspections": "tsx scripts/philly-inspections-backfill.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

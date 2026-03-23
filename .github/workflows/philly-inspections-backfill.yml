@@ -1,0 +1,65 @@
+name: Philly Inspections Backfill
+
+on:
+  schedule:
+    - cron: '17 10 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: Optional ISO date to backfill instead of the default 3-days-prior date
+        required: false
+        type: string
+      remote_delay_ms:
+        description: Optional scraper delay override in milliseconds
+        required: false
+        default: '1200'
+        type: string
+
+concurrency:
+  group: philly-inspections-backfill-${{ github.event_name }}-${{ github.event.inputs.date || 'scheduled' }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TZ: America/New_York
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Resolve target date
+        id: target_date
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            TARGET_DATE="${{ github.event.inputs.date }}"
+          else
+            TARGET_DATE="$(date -d '3 days ago' +%F)"
+          fi
+          echo "target_date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
+          echo "Target date: $TARGET_DATE"
+
+      - name: Run Philly inspections backfill
+        env:
+          NODE_ENV: production
+        run: |
+          npm run backfill:philly-inspections -- \
+            --date "${{ steps.target_date.outputs.target_date }}" \
+            --refresh-existing \
+            --remote-delay-ms "${{ github.event.inputs.remote_delay_ms || '1200' }}"

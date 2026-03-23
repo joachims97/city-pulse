@@ -1,6 +1,7 @@
 import { getInspections } from '@/services/inspectionsService'
 import { getCity } from '@/config/cities'
 import { getDistrictLabel } from '@/lib/districts'
+import { getInspectionDefaultDays, getInspectionEmptyStateLabel, getInspectionTimeWindowLabel } from '@/lib/inspectionWindow'
 import { shortenCompactLabel } from '@/lib/labels'
 import { paginateItems } from '@/lib/pagination'
 import EmptyState from '@/components/ui/EmptyState'
@@ -63,24 +64,26 @@ const PREVIEW_ROW_COUNT = 13
 export default async function InspectionsSection({
   wardId,
   cityKey = 'chicago',
-  days = 365,
+  days,
   view = 'preview',
   page,
   pageSize,
 }: InspectionsSectionProps) {
   const city = getCity(cityKey)
+  const resolvedDays = days ?? getInspectionDefaultDays(city.key)
+  const timeWindowLabel = getInspectionTimeWindowLabel(resolvedDays)
   const districtLabel = getDistrictLabel(city, wardId)
-  const expandHref = `/${city.key}/ward/${wardId}/table/inspections?days=${days}`
-  const mapHref = `/${city.key}/ward/${wardId}/map/inspections?days=${days}`
+  const expandHref = `/${city.key}/ward/${wardId}/table/inspections?days=${resolvedDays}`
+  const mapHref = `/${city.key}/ward/${wardId}/map/inspections?days=${resolvedDays}`
   let inspections
 
   try {
-    inspections = await getInspections(wardId, city, days, view)
+    inspections = await getInspections(wardId, city, resolvedDays, view)
   } catch {
     return (
       <div className="panel panel-accent-blue">
         <div className="panel-header">
-          <span>Inspections — Last 12 months · {city.districtName} {districtLabel}</span>
+          <span>Inspections — {timeWindowLabel} · {city.districtName} {districtLabel}</span>
         </div>
         <EmptyState message="Inspection data is temporarily unavailable." tone="error" />
       </div>
@@ -99,7 +102,7 @@ export default async function InspectionsSection({
   return (
     <div className="panel panel-accent-blue">
       <div className="panel-header">
-        <span>Inspections — Last 12 months · {city.districtName} {districtLabel}</span>
+        <span>Inspections — {timeWindowLabel} · {city.districtName} {districtLabel}</span>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <a href={mapHref} className="action-link action-link-route">
             Map view
@@ -131,7 +134,7 @@ export default async function InspectionsSection({
       )}
 
       {inspections.length === 0 ? (
-        <EmptyState message="No inspections found for this district in the last year." />
+        <EmptyState message={`No inspections found for this district in ${getInspectionEmptyStateLabel(resolvedDays)}.`} />
       ) : (
         <div>
           {pagination && (

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getCityOrNull } from '@/config/cities'
 import { getDistrictDisplayName, getDistrictLabel } from '@/lib/districts'
+import { getInspectionDefaultDays, getInspectionTimeWindowLabel } from '@/lib/inspectionWindow'
 import { getInspections } from '@/services/inspectionsService'
 import InspectionMapExplorer from '@/components/map/InspectionMapExplorer'
 import EmptyState from '@/components/ui/EmptyState'
@@ -15,10 +16,6 @@ interface Props {
   }
 }
 
-function getTimeWindowLabel(days: number) {
-  return `Last ${Math.round(days / 30)} months`
-}
-
 export async function generateMetadata({ params, searchParams }: Props) {
   const city = getCityOrNull(params.cityKey)
   if (!city) return { title: 'Not Found — CityPulse' }
@@ -28,12 +25,13 @@ export async function generateMetadata({ params, searchParams }: Props) {
     return { title: 'Not Found — CityPulse' }
   }
 
-  const days = parseInt(searchParams.days ?? '365', 10)
+  const defaultDays = getInspectionDefaultDays(city.key)
+  const days = parseInt(searchParams.days ?? String(defaultDays), 10)
   const districtDisplayName = getDistrictDisplayName(city, wardId)
 
   return {
     title: `${city.displayName} ${districtDisplayName} Inspection Map`,
-    description: `Mapped inspections for ${city.displayName} ${districtDisplayName}, ${getTimeWindowLabel(Number.isNaN(days) ? 365 : days)}.`,
+    description: `Mapped inspections for ${city.displayName} ${districtDisplayName}, ${getInspectionTimeWindowLabel(Number.isNaN(days) ? defaultDays : days)}.`,
   }
 }
 
@@ -46,8 +44,9 @@ export default async function WardInspectionMapPage({ params, searchParams }: Pr
     notFound()
   }
 
-  const days = parseInt(searchParams.days ?? '365', 10)
-  const resolvedDays = Number.isNaN(days) ? 365 : days
+  const defaultDays = getInspectionDefaultDays(city.key)
+  const days = parseInt(searchParams.days ?? String(defaultDays), 10)
+  const resolvedDays = Number.isNaN(days) ? defaultDays : days
   let rawInspections
 
   try {
@@ -99,7 +98,7 @@ export default async function WardInspectionMapPage({ params, searchParams }: Pr
 
         <div className="space-y-3">
           <h1 className="page-title max-w-[10ch]">Inspection map</h1>
-          <p className="page-subtitle">{getTimeWindowLabel(resolvedDays)} - {mapInspectionCount} mapped inspections.</p>
+          <p className="page-subtitle">{getInspectionTimeWindowLabel(resolvedDays)} - {mapInspectionCount} mapped inspections.</p>
           <div>
             <a href={`/${city.key}/ward/${wardId}/table/inspections?days=${resolvedDays}`} className="action-link action-link-route">
               Open table view
