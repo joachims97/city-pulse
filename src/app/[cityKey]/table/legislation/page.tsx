@@ -34,7 +34,7 @@ export default function CityLegislationTablePage({ params, searchParams }: Props
 
   return (
     <div className="page-shell space-y-6">
-      <section className="page-rule grid gap-6 lg:grid-cols-[10rem_minmax(0,1fr)_18rem]">
+      <section className="page-rule grid gap-6 lg:grid-cols-[10rem_minmax(0,1fr)]">
         <div className="page-rail">
           <div className="page-kicker">Legislation</div>
           <div className="breadcrumbs">
@@ -48,19 +48,6 @@ export default function CityLegislationTablePage({ params, searchParams }: Props
 
         <div className="space-y-3">
           <h1 className="page-title max-w-[12ch]">City council legislation</h1>
-          <p className="page-subtitle">
-            Full-screen legislation feed for {city.displayName}, paged for deeper browsing.
-          </p>
-        </div>
-
-        <div className="summary-card summary-card-blue">
-          <div className="summary-card-body">
-            <div className="summary-card-label">View</div>
-            <div className="summary-card-value">01</div>
-            <div className="summary-card-copy">
-              <a href={`/${city.key}`} className="action-link-light">Back to city dashboard</a>
-            </div>
-          </div>
         </div>
       </section>
 
