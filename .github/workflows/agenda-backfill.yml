@@ -34,7 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      NODE_ENV: production
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
@@ -56,6 +55,8 @@ jobs:
         run: npx prisma generate
 
       - name: Run agenda backfill
+        env:
+          NODE_ENV: production
         run: npm run backfill:agenda -- --city "${{ matrix.city }}" --days 7 --limit 25
 
   manual:
@@ -63,7 +64,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      NODE_ENV: production
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
@@ -85,6 +85,8 @@ jobs:
         run: npx prisma generate
 
       - name: Run agenda backfill
+        env:
+          NODE_ENV: production
         run: |
           CMD=(npm run backfill:agenda -- --days "${{ github.event.inputs.days || '7' }}" --limit "${{ github.event.inputs.limit || '25' }}")
           if [ -n "${{ github.event.inputs.city }}" ]; then
