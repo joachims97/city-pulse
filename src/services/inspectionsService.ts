@@ -70,7 +70,7 @@ export async function getInspections(
   days = 365,
   view: DataView = 'preview'
 ): Promise<Inspection[]> {
-  const cacheKey = `${city.key}:inspections:v11:ward:${wardId}:${days}d:${view}`
+  const cacheKey = `${city.key}:inspections:v12:ward:${wardId}:${days}d:${view}`
 
   return getCached(
     cacheKey,
@@ -148,13 +148,17 @@ async function fetchInspections(
       $order: `${inspDateCol} DESC`,
     }
 
+    const fullPageSize = city.key === 'nyc' ? 500 : districtGeometry ? 300 : 200
+    const fullMaxPages = city.key === 'nyc' ? 50 : 20
+
     const raw = view === 'full'
       ? await socrataFetchAll<InspectionRaw>(
           datasetId,
           query,
           city,
           city.datasets.inspectionsHost,
-          districtGeometry ? 300 : 200
+          fullPageSize,
+          fullMaxPages
         )
       : await socrataFetch<InspectionRaw>(
           datasetId,
