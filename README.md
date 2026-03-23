@@ -66,7 +66,7 @@ Full text hydration and summary generation are handled by a secret-protected Ver
 
 - `GET /api/cron/agenda-backfill`
 - Protected by `Authorization: Bearer ${CRON_SECRET}`
-- Scheduled in [`vercel.json`](/Users/joachim/Documents/city%20tracker/citypulse/vercel.json) for Sundays at `07:00 UTC`
+- Scheduled in [`vercel.json`](/Users/joachim/Documents/city%20tracker/citypulse/vercel.json) for daily runs at `07:00 UTC` (3 AM Eastern during daylight saving time)
 
 The cron job:
 
