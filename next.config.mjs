@@ -2,7 +2,14 @@
 const nextConfig = {
   // These packages should stay server-side in the Vercel build.
   experimental: {
-    serverComponentsExternalPackages: ['ioredis', '@prisma/client', 'prisma', 'pdf-parse'],
+    serverComponentsExternalPackages: [
+      'ioredis',
+      '@prisma/client',
+      'prisma',
+      'pdf-parse',
+      'pdfjs-dist',
+      '@napi-rs/canvas',
+    ],
   },
 
   images: {
