@@ -1,7 +1,8 @@
 import { getCached } from '@/lib/cache'
 import { arcgisDateLiteral, arcgisQueryAll, combineArcGISWhere, envelopeFromBounds, getArcGISPoint } from '@/lib/arcgis'
 import { parseDistrictId } from '@/lib/districts'
-import { cartoSqlFetch, escapeSqlString } from '@/lib/carto'
+import { escapeSqlString } from '@/lib/carto'
+import { prisma } from '@/lib/prisma'
 import { socrataFetch, socrataFetchAll, daysAgo } from '@/lib/socrata'
 import { CACHE_TTL } from '@/config/app'
 import type { ArcGISLayerSource, CharlotteHealthInspectionSource, CityConfig } from '@/types/city'
@@ -25,6 +26,21 @@ export interface Inspection {
   riskLevel: string | null
   isFailed: boolean
   isRecentFail: boolean
+}
+
+interface StoredPhiladelphiaInspectionRow {
+  inspectionId: string
+  dbaName: string
+  address: string | null
+  zip: string | null
+  inspectionType: string | null
+  results: string | null
+  violations: string | null
+  inspectionDate: Date | null
+  latitude: number | null
+  longitude: number | null
+  ward: number | null
+  createdAt: Date
 }
 
 type DataView = 'preview' | 'full'
@@ -54,7 +70,7 @@ export async function getInspections(
   days = 365,
   view: DataView = 'preview'
 ): Promise<Inspection[]> {
-  const cacheKey = `${city.key}:inspections:v10:ward:${wardId}:${days}d:${view}`
+  const cacheKey = `${city.key}:inspections:v11:ward:${wardId}:${days}d:${view}`
 
   return getCached(
     cacheKey,
@@ -631,97 +647,53 @@ function classifyInspectionNotes(
 
 async function fetchPhiladelphiaInspections(
   wardId: number,
-  city: CityConfig,
+  _city: CityConfig,
   days: number,
   view: DataView
 ): Promise<Inspection[]> {
-  const geometry = await getDistrictGeometry(wardId, city)
-  const bbox = await getDistrictBbox(wardId, city)
-  if (!geometry || !bbox) {
-    throw new Error(`District geometry unavailable for ${city.key}:${wardId}`)
-  }
-
-  const since = daysAgo(days)
-  const rows = await cartoSqlFetch<{
-    casenumber?: string
-    casetype?: string
-    caseresponsibility?: string
-    casepriority?: string
-    investigationcompleted?: string
-    investigationstatus?: string
-    opa_owner?: string
-    address?: string
-    zip?: string
-    lat?: number | string
-    lng?: number | string
-  }>(
-    `
-      SELECT
-        casenumber,
-        casetype,
-        caseresponsibility,
-        casepriority,
-        investigationcompleted,
-        investigationstatus,
-        opa_owner,
-        address,
-        zip,
-        ST_Y(the_geom) AS lat,
-        ST_X(the_geom) AS lng
-      FROM case_investigations
-      WHERE investigationcompleted >= '${since}'
-        AND ST_Y(the_geom) BETWEEN ${bbox.minLat} AND ${bbox.maxLat}
-        AND ST_X(the_geom) BETWEEN ${bbox.minLng} AND ${bbox.maxLng}
-      ORDER BY investigationcompleted DESC
-      LIMIT ${view === 'full' ? 2000 : 400}
-    `.replace(/\s+/g, ' ').trim()
-  )
+  const sinceDate = new Date(daysAgo(days))
+  const rows = ((await prisma.inspection.findMany({
+    where: {
+      cityKey: 'philadelphia',
+      ward: wardId,
+      inspectionDate: {
+        gte: sinceDate,
+      },
+    },
+    orderBy: [
+      { inspectionDate: 'desc' },
+      { createdAt: 'desc' },
+    ],
+    take: view === 'full' ? 2000 : 400,
+  })) ?? []) as StoredPhiladelphiaInspectionRow[]
 
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  const inspections: Inspection[] = []
+  return rows.map((row): Inspection => {
+    const coordinates = normalizeInspectionCoordinates(row.latitude ?? null, row.longitude ?? null)
+    const inspectionDate = row.inspectionDate ? row.inspectionDate.toISOString().slice(0, 10) : null
+    const isFailed = isInspectionFailure(row.results)
+    const isRecentFail = isFailed && row.inspectionDate ? row.inspectionDate > thirtyDaysAgo : false
 
-  for (const row of rows) {
-    const coordinates = normalizeInspectionCoordinates(
-      row.lat !== undefined ? Number(row.lat) : null,
-      row.lng !== undefined ? Number(row.lng) : null
-    )
-    const latitude = coordinates.latitude
-    const longitude = coordinates.longitude
-
-    if (latitude === null || longitude === null || !pointInDistrict(latitude, longitude, geometry)) {
-      continue
-    }
-
-    const results = row.investigationstatus ?? 'Unknown'
-    const inspectionDate = row.investigationcompleted ?? null
-    const parsedDate = inspectionDate ? new Date(inspectionDate) : null
-    const isFailed = isInspectionFailure(results)
-
-    inspections.push({
-      id: row.casenumber ?? `${results}:${row.address ?? 'unknown'}`,
-      dbaName: firstText(row.opa_owner, row.address) ?? 'L&I Case Investigation',
+    return {
+      id: row.inspectionId,
+      dbaName: row.dbaName,
       address: row.address ?? null,
       zip: row.zip ?? null,
-      inspectionType: row.caseresponsibility ?? null,
-      results,
-      violations: null,
-      details: joinInspectionEntries([
-        row.casetype ? `Case: ${row.casetype}` : null,
-        row.casepriority ? `Priority: ${row.casepriority}` : null,
-      ]),
-      inspectionDate: inspectionDate?.split('T')[0] ?? null,
-      latitude,
-      longitude,
-      ward: wardId,
-      riskLevel: row.casepriority ?? null,
+      inspectionType: row.inspectionType ?? null,
+      results: row.results ?? null,
+      violations: row.violations ?? null,
+      details: null,
+      inspectionDate,
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+      ward: row.ward ?? wardId,
+      riskLevel: null,
       isFailed,
-      isRecentFail: isFailed && parsedDate ? parsedDate > thirtyDaysAgo : false,
-    })
-  }
-
-  return inspections
+      isRecentFail,
+    }
+  })
 }
 
 interface CharlotteInspectionSession {

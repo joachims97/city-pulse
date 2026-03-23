@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getCityOrNull } from '@/config/cities'
 import { getDistrictDisplayName } from '@/lib/districts'
+import { getInspectionDefaultDays } from '@/lib/inspectionWindow'
 import ComplaintsSection from '@/components/complaints/ComplaintsSection'
 import PermitsSection from '@/components/permits/PermitsSection'
 import InspectionsSection from '@/components/inspections/InspectionsSection'
@@ -31,7 +32,7 @@ function getDefaultDays(section: string, cityKey: string): number {
     case 'permits':
       return 180
     case 'inspections':
-      return 365
+      return getInspectionDefaultDays(cityKey)
     default:
       return 90
   }
