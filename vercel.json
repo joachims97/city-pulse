@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "regions": ["ord1"],
+  "regions": ["iad1"],
   "crons": [
     {
       "path": "/api/cron/agenda-backfill",
