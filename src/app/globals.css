@@ -2,26 +2,159 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  body {
+    @apply bg-white text-gray-900 antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  a {
+    @apply text-blue-700;
+  }
+
+  a:hover {
+    @apply underline text-blue-900;
+  }
+
+  a,
+  button,
+  [role='button'],
+  summary {
+    touch-action: manipulation;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .panel {
+    @apply border border-gray-300 bg-white;
+  }
+
+  .panel-header {
+    @apply border-b border-gray-300 bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 flex items-center justify-between;
+  }
+
+  .tag {
+    @apply inline-block border px-1 py-0 text-xs leading-5;
+  }
+
+  .tag-green  { @apply tag bg-green-50  text-green-800  border-green-400;  }
+  .tag-red    { @apply tag bg-red-50    text-red-800    border-red-400;    }
+  .tag-yellow { @apply tag bg-yellow-50 text-yellow-800 border-yellow-400; }
+  .tag-blue   { @apply tag bg-blue-50   text-blue-800   border-blue-400;   }
+  .tag-gray   { @apply tag bg-gray-100  text-gray-700   border-gray-400;   }
+
+  .data-row {
+    @apply flex items-center border-b border-gray-100 px-3 py-1 last:border-0 hover:bg-gray-50;
+  }
+
+  .expandable-row {
+    @apply border-b border-gray-100;
+  }
+
+  .expandable-row:last-child {
+    @apply border-b-0;
+  }
+
+  .expandable-row-summary {
+    @apply flex items-start gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer list-none;
+  }
+
+  .expandable-row[open] > .expandable-row-summary {
+    @apply bg-gray-50;
+  }
+
+  .expandable-row-body {
+    @apply border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600 leading-relaxed;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .expandable-row-text {
+    @apply mt-0.5 text-gray-700;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .expandable-row-toggle {
+    @apply text-sm text-gray-300 flex-shrink-0 leading-none;
+  }
+
+  .expandable-row-toggle-expanded {
+    display: none;
+  }
+
+  .expandable-row[open] .expandable-row-toggle-collapsed {
+    display: none;
+  }
+
+  .expandable-row[open] .expandable-row-toggle-expanded {
+    display: inline;
+  }
+
+  .stat-label {
+    @apply text-xs text-gray-500;
+  }
+
+  .stat-value {
+    @apply text-sm font-semibold text-gray-900;
+  }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+.leaflet-container {
+  font-family: inherit !important;
+}
+
+.expandable-row-summary::-webkit-details-marker {
+  display: none;
+}
+
+.district-map-label {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgb(37 99 235 / 0.35);
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+  color: rgb(30 64 175);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 4px 6px;
+  pointer-events: none;
+}
+
+.district-map-label--active {
+  background: rgba(219, 234, 254, 0.96);
+  border-color: rgb(37 99 235 / 0.5);
+}
+
+@media (hover: none) {
+  a:hover {
+    text-decoration-line: none;
+    color: inherit;
+  }
+
+  .hover\:underline:hover {
+    text-decoration-line: none !important;
+  }
+
+  .hover\:bg-blue-50:hover,
+  .hover\:bg-gray-50:hover {
+    background-color: inherit !important;
+  }
+
+  .hover\:border-blue-400:hover {
+    border-color: inherit !important;
+  }
+
+  .hover\:text-blue-900:hover,
+  .hover\:text-gray-600:hover {
+    color: inherit !important;
+  }
+
+  .hover\:bg-blue-800:hover {
+    background-color: rgb(29 78 216) !important;
   }
 }

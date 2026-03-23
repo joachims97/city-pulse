@@ -1,0 +1,10 @@
+{
+  "framework": "nextjs",
+  "regions": ["ord1"],
+  "crons": [
+    {
+      "path": "/api/cron/agenda-backfill",
+      "schedule": "0 7 * * 0"
+    }
+  ]
+}

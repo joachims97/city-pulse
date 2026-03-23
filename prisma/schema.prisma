@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Representative {
+  id         String    @id @default(cuid())
+  wardId     Int
+  cityKey    String    @default("chicago")
+  name       String
+  title      String    @default("Alderman")
+  phone      String?
+  email      String?
+  website    String?
+  officeAddr String?
+  photoUrl   String?
+  party      String?
+  termStart  DateTime?
+  termEnd    DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([cityKey, wardId])
+  @@index([cityKey, wardId])
+}
+
+model CachedData {
+  id          String   @id @default(cuid())
+  cacheKey    String   @unique
+  cityKey     String
+  dataType    String
+  payload     Json
+  fetchedAt   DateTime @default(now())
+  expiresAt   DateTime
+  wardId      Int?
+  queryParams Json?
+
+  @@index([cacheKey])
+  @@index([cityKey, dataType, wardId])
+  @@index([expiresAt])
+}
+
+model AgendaItem {
+  id            String    @id @default(cuid())
+  eventId       String
+  cityKey       String    @default("chicago")
+  eventDate     DateTime
+  eventBodyName String
+  eventLocation String?
+  matterTitle   String
+  matterType    String?
+  matterStatus  String?
+  agendaNote    String?
+  minutesNote   String?
+  fullText      String?
+  fullTextSourceUrl String?
+  fullTextFetchedAt DateTime?
+  aiSummary     String?
+  summarizedAt  DateTime?
+  agendaFileUrl String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([cityKey, eventId])
+  @@index([cityKey, eventDate])
+  @@index([eventDate])
+}
+
+model BudgetItem {
+  id                   String   @id @default(cuid())
+  cityKey              String   @default("chicago")
+  fiscalYear           Int
+  department           String
+  fundCode             String?
+  appropriationAccount String?
+  budgetedAmount       Float
+  ordinanceAmount      Float?
+  dataType             String   @default("ordinance")
+  createdAt            DateTime @default(now())
+
+  @@unique([cityKey, fiscalYear, dataType, department, appropriationAccount])
+  @@index([cityKey, fiscalYear, dataType])
+  @@index([department])
+}
+
+model Complaint311 {
+  id            String    @id @default(cuid())
+  cityKey       String    @default("chicago")
+  srNumber      String
+  srType        String
+  srStatus      String
+  ward          Int?
+  community     String?
+  streetAddress String?
+  latitude      Float?
+  longitude     Float?
+  createdDate   DateTime
+  closedDate    DateTime?
+  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
+
+  @@unique([cityKey, srNumber])
+  @@index([cityKey, ward, createdDate])
+  @@index([srType, srStatus])
+}
+
+model Inspection {
+  id             String    @id @default(cuid())
+  cityKey        String    @default("chicago")
+  inspectionId   String
+  dbaName        String
+  licenseNo      String?
+  address        String?
+  zip            String?
+  inspectionType String?
+  results        String?
+  violations     String?
+  inspectionDate DateTime?
+  latitude       Float?
+  longitude      Float?
+  ward           Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([cityKey, inspectionId])
+  @@index([cityKey, ward])
+  @@index([inspectionDate])
+}
