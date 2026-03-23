@@ -12,7 +12,7 @@ on:
       remote_delay_ms:
         description: Optional scraper delay override in milliseconds
         required: false
-        default: '1200'
+        default: '3000'
         type: string
 
 concurrency:
@@ -62,4 +62,4 @@ jobs:
           npm run backfill:philly-inspections -- \
             --date "${{ steps.target_date.outputs.target_date }}" \
             --refresh-existing \
-            --remote-delay-ms "${{ github.event.inputs.remote_delay_ms || '1200' }}"
+            --remote-delay-ms "${{ github.event.inputs.remote_delay_ms || '3000' }}"
