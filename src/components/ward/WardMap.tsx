@@ -111,10 +111,10 @@ export default function WardMap({ cityKey, wardId, districtName, lat, lng }: Pro
 
         const geoLayer = L.geoJSON(feature as GeoJSON.GeoJsonObject, {
           style: {
-            color: '#1d4ed8',
+            color: '#0057ff',
             weight: 2,
-            fillColor: '#93c5fd',
-            fillOpacity: 0.22,
+            fillColor: '#d84c2f',
+            fillOpacity: 0.18,
           },
         })
 
@@ -130,9 +130,9 @@ export default function WardMap({ cityKey, wardId, districtName, lat, lng }: Pro
         if (typeof lat === 'number' && typeof lng === 'number') {
           L.circleMarker([lat, lng], {
             radius: 5,
-            color: '#1d4ed8',
+            color: '#111111',
             weight: 2,
-            fillColor: '#ffffff',
+            fillColor: '#f0c419',
             fillOpacity: 1,
           }).addTo(layerGroup)
         }
@@ -163,7 +163,7 @@ export default function WardMap({ cityKey, wardId, districtName, lat, lng }: Pro
   }, [cityKey, districtName, lat, lng, mapReady, wardId])
 
   return (
-    <div className="relative h-52 w-full bg-slate-50">
+    <div className="relative h-64 w-full bg-[#e7dfcf]">
       <div
         ref={mapRef}
         className="h-full w-full"
@@ -171,7 +171,7 @@ export default function WardMap({ cityKey, wardId, districtName, lat, lng }: Pro
       />
 
       {error && (
-        <div className="absolute inset-x-3 bottom-3 border border-red-200 bg-white/95 px-3 py-2 text-xs text-red-600">
+        <div className="absolute inset-x-3 bottom-3 border-2 border-[var(--red)] bg-[rgba(251,248,241,0.96)] px-3 py-2 text-[0.72rem] uppercase tracking-[0.16em] text-[var(--red)]">
           {error}
         </div>
       )}

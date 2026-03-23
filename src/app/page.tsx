@@ -4,38 +4,40 @@ export default function Home() {
   const cities = getAllCities()
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 py-6">
-      <div className="mb-4">
-        <p className="text-xs text-gray-500">Open civic data by district — 311 complaints · permits · inspections · budget · council legislation</p>
-      </div>
-
-      <div className="border border-gray-300">
-        <div className="bg-gray-100 border-b border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 uppercase tracking-wide">
-          Select a City
+    <div className="page-shell space-y-8">
+      <section className="page-rule">
+        <div>
+          <h1 className="page-title max-w-[12ch]">Open civic data by district.</h1>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-300 bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-              <th className="text-left px-3 py-1.5 font-medium">City</th>
-              <th className="text-left px-3 py-1.5 font-medium">State</th>
-              <th className="text-left px-3 py-1.5 font-medium">Districts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cities.map((city, i) => (
-              <tr key={city.key} className={`border-b border-gray-200 hover:bg-blue-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                <td className="px-3 py-1.5">
-                  <a href={`/${city.key}`} className="text-blue-700 hover:underline font-medium">
+      </section>
+
+      <section>
+        <div className="panel panel-accent-red overflow-hidden">
+          <div className="panel-header">
+            <span>Select a city</span>
+          </div>
+
+          <div>
+            {cities.map((city) => (
+              <a
+                key={city.key}
+                href={`/${city.key}`}
+                className="link-plain data-row"
+              >
+                <span className="min-w-0">
+                  <span className="city-link-title block truncate text-base font-bold leading-tight text-[var(--ink)] transition-colors">
                     {city.displayName}
-                  </a>
-                </td>
-                <td className="px-3 py-1.5 text-gray-600">{city.state}</td>
-                <td className="px-3 py-1.5 text-gray-600">{city.districtCount} {city.districtName}s</td>
-              </tr>
+                  </span>
+                  <span className="mt-1 block text-[0.72rem] uppercase tracking-[0.18em] text-[var(--muted)]">
+                    {city.districtCount} {city.districtName}
+                    {city.districtCount === 1 ? '' : 's'}
+                  </span>
+                </span>
+              </a>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

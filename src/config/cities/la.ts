@@ -1,5 +1,26 @@
 import type { CityConfig } from '@/types/city'
 
+// Static council member data from the LA City Clerk Current Elected Officials page
+// Source: https://clerk.lacity.gov/articles/current-elected-officials
+// Posted on 2026-01-06
+export const LA_REPS: Record<number, { name: string; phone: string | null; website: string | null }> = {
+  1: { name: 'Eunisses Hernandez', phone: null, website: null },
+  2: { name: 'Adrin Nazarian', phone: null, website: null },
+  3: { name: 'Bob Blumenfield', phone: null, website: null },
+  4: { name: 'Nithya Raman', phone: null, website: null },
+  5: { name: 'Katy Young Yaroslavsky', phone: null, website: null },
+  6: { name: 'Imelda Padilla', phone: null, website: null },
+  7: { name: 'Monica Rodriguez', phone: null, website: null },
+  8: { name: 'Marqueece Harris-Dawson', phone: null, website: null },
+  9: { name: 'Curren D. Price Jr.', phone: null, website: null },
+  10: { name: 'Heather Hutt', phone: null, website: null },
+  11: { name: 'Traci Park', phone: null, website: null },
+  12: { name: 'John Lee', phone: null, website: null },
+  13: { name: 'Hugo Soto-Martinez', phone: null, website: null },
+  14: { name: 'Ysabel J. Jurado', phone: null, website: null },
+  15: { name: 'Tim McOsker', phone: null, website: null },
+}
+
 export const LA: CityConfig = {
   key: 'la',
   displayName: 'Los Angeles',
@@ -51,7 +72,7 @@ export const LA: CityConfig = {
     budgetDepartment: 'department_name',
     budgetAmount: 'appropriation',
     budgetFiscalYear: 'fiscal_year',
-    // Representatives — no Socrata dataset; fallback only
+    // Representatives — served from static LA_REPS above
     repDistrict: 'cd',
     repName: 'cdmember',
   },

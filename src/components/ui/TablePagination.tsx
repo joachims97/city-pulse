@@ -35,38 +35,42 @@ export default function TablePagination({
   }
 
   return (
-    <div className="flex flex-col gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        Showing <span className="font-medium text-gray-900">{startItem}-{endItem}</span> of{' '}
-        <span className="font-medium text-gray-900">{totalItems}</span>
+    <div className="border-b border-[rgba(17,17,17,0.18)] bg-[rgba(17,17,17,0.035)] px-5 py-3 text-[0.72rem] uppercase tracking-[0.16em] text-[var(--muted)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          Showing <span className="font-bold text-[var(--ink)]">{startItem}-{endItem}</span> of{' '}
+          <span className="font-bold text-[var(--ink)]">{totalItems}</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+          <label className="flex items-center gap-1">
+            <span>Rows</span>
+            <select
+              value={pageSize}
+              onChange={(event) => updateQuery({ page: '1', pageSize: event.target.value })}
+              className="border border-[var(--line)] bg-[rgba(255,255,255,0.6)] px-2 py-1 text-[0.7rem] font-bold text-[var(--ink)] outline-none"
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <span>
+            Page <span className="font-bold text-[var(--ink)]">{currentPage}</span> of{' '}
+            <span className="font-bold text-[var(--ink)]">{totalPages}</span>
+          </span>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1">
-          <span>Rows</span>
-          <select
-            value={pageSize}
-            onChange={(event) => updateQuery({ page: '1', pageSize: event.target.value })}
-            className="border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700"
-          >
-            {PAGE_SIZE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <span>
-          Page <span className="font-medium text-gray-900">{currentPage}</span> of{' '}
-          <span className="font-medium text-gray-900">{totalPages}</span>
-        </span>
-
+      <div className="mt-3 flex items-center justify-between gap-2 sm:justify-end">
         <button
           type="button"
           onClick={() => updateQuery({ page: String(currentPage - 1), pageSize: String(pageSize) })}
           disabled={currentPage <= 1}
-          className="border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+          className="border border-[var(--line)] bg-[rgba(255,255,255,0.6)] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-35"
         >
           Previous
         </button>
@@ -74,7 +78,7 @@ export default function TablePagination({
           type="button"
           onClick={() => updateQuery({ page: String(currentPage + 1), pageSize: String(pageSize) })}
           disabled={currentPage >= totalPages}
-          className="border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+          className="border border-[var(--line)] bg-[var(--ink)] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--panel)] disabled:cursor-not-allowed disabled:opacity-35"
         >
           Next
         </button>

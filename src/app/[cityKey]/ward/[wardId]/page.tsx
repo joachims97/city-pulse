@@ -44,60 +44,54 @@ export default async function CityWardPage({ params, searchParams }: Props) {
   const districtDisplayName = getDistrictDisplayName(city, wardId)
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 py-4">
-      {/* Breadcrumb */}
-      <div className="text-xs text-gray-500 mb-3">
-        <a href="/" className="text-blue-700 hover:underline">Home</a>
-        <span className="mx-1.5">›</span>
-        <a href={`/${city.key}`} className="text-blue-700 hover:underline">{city.displayName}</a>
-        <span className="mx-1.5">›</span>
-        <span>{districtDisplayName}</span>
-      </div>
-
-      {/* Page header */}
-      <div className="border border-gray-300 px-3 py-2 mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-sm font-bold text-gray-900">{city.displayName} — {districtDisplayName}</h1>
-          {address && <p className="text-xs text-gray-500 mt-0.5">{address}</p>}
-        </div>
-        <span className="text-xs text-gray-400">{city.state}</span>
-      </div>
-
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left column */}
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="panel overflow-hidden">
-            <div className="panel-header">
-              <span>{city.districtName} Locator</span>
+    <div className="page-shell space-y-8">
+      <section className="page-rule">
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <div className="breadcrumbs">
+              <a href="/">Home</a>
+              <span className="breadcrumbs-sep">/</span>
+              <a href={`/${city.key}`}>{city.displayName}</a>
+              <span className="breadcrumbs-sep">/</span>
+              <span>{districtDisplayName}</span>
             </div>
-            <WardMap
-              cityKey={city.key}
-              wardId={wardId}
-              districtName={city.districtName}
-              lat={Number.isFinite(lat) ? lat : undefined}
-              lng={Number.isFinite(lng) ? lng : undefined}
-            />
+
+            <div className="space-y-3">
+              <h1 className="page-title max-w-[10ch]">{districtDisplayName}</h1>
+            </div>
           </div>
 
-          <RepresentativeCard rep={rep} districtName={city.districtName} />
+          <div className="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
+            <div className="space-y-6">
+              <div className="panel panel-accent-blue overflow-hidden">
+                <WardMap
+                  cityKey={city.key}
+                  wardId={wardId}
+                  districtName={city.districtName}
+                  lat={Number.isFinite(lat) ? lat : undefined}
+                  lng={Number.isFinite(lng) ? lng : undefined}
+                />
+              </div>
+
+              <RepresentativeCard rep={rep} districtName={city.districtName} />
+            </div>
+
+            <div className="space-y-6">
+              <Suspense fallback={<SectionSkeleton lines={5} />}>
+                <InspectionsSection wardId={wardId} cityKey={city.key} />
+              </Suspense>
+
+              <Suspense fallback={<SectionSkeleton lines={4} />}>
+                <PermitsSection wardId={wardId} cityKey={city.key} />
+              </Suspense>
+
+              <Suspense fallback={<SectionSkeleton lines={6} />}>
+                <ComplaintsSection wardId={wardId} cityKey={city.key} />
+              </Suspense>
+            </div>
+          </div>
         </div>
-
-        {/* Right column */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <Suspense fallback={<SectionSkeleton lines={5} />}>
-            <InspectionsSection wardId={wardId} cityKey={city.key} />
-          </Suspense>
-
-          <Suspense fallback={<SectionSkeleton lines={4} />}>
-            <PermitsSection wardId={wardId} cityKey={city.key} />
-          </Suspense>
-
-          <Suspense fallback={<SectionSkeleton lines={6} />}>
-            <ComplaintsSection wardId={wardId} cityKey={city.key} />
-          </Suspense>
-        </div>
-      </div>
+      </section>
     </div>
   )
 }

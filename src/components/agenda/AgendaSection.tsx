@@ -5,15 +5,6 @@ import AgendaItemCard from './AgendaItemCard'
 import EmptyState from '@/components/ui/EmptyState'
 import TablePagination from '@/components/ui/TablePagination'
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
 function getAgendaSortTime(matterDate: string | null, eventDate: string | null) {
   const value = matterDate ?? eventDate
   if (!value) return Number.NEGATIVE_INFINITY
@@ -56,17 +47,17 @@ export default async function AgendaSection({
     const visibleRows = pagination ? pagination.items : rows.slice(0, 12)
 
     return (
-      <div className="panel">
+      <div className="panel panel-accent-black">
         <div className="panel-header">
           <span>City Council Legislation</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {view === 'full' ? (
-              <a href={`/${city.key}`} className="text-xs text-blue-700 hover:underline font-normal">
+              <a href={`/${city.key}`} className="action-link">
                 Back to city
               </a>
             ) : (
-              <a href={expandHref} className="text-xs text-blue-700 hover:underline font-normal">
-                Click to expand
+              <a href={expandHref} className="action-link">
+                Open full feed
               </a>
             )}
             <span className="tag tag-blue">{rows.length} items</span>
@@ -88,25 +79,9 @@ export default async function AgendaSection({
               />
             )}
 
-            {visibleRows.map((row, index) => {
-              const previousEventId = index > 0 ? visibleRows[index - 1]?.event.eventId : null
-              const showEventHeader = row.event.eventId !== previousEventId
-
-              return (
-                <div key={row.item.id}>
-                  {showEventHeader && (
-                    <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-200">
-                      <div className="text-xs font-semibold text-gray-700">{row.event.bodyName}</div>
-                      <div className="text-xs text-gray-500">
-                        {[row.event.eventDate ? formatDate(row.event.eventDate) : null, row.event.location].filter(Boolean).join(' · ')}
-                      </div>
-                    </div>
-                  )}
-
-                  <AgendaItemCard item={row.item} />
-                </div>
-              )
-            })}
+            {visibleRows.map((row) => (
+              <AgendaItemCard key={row.item.id} item={row.item} />
+            ))}
 
             {pagination && (
               <TablePagination
@@ -124,7 +99,7 @@ export default async function AgendaSection({
     )
   } catch {
     return (
-      <div className="panel">
+      <div className="panel panel-accent-black">
         <div className="panel-header">
           <span>City Council Legislation</span>
         </div>

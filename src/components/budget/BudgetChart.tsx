@@ -34,8 +34,8 @@ function formatM(value: number) {
 }
 
 const COLORS = [
-  '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd',
-  '#1e40af', '#1e3a8a', '#172554', '#3730a3', '#4338ca',
+  '#111111', '#0057ff', '#d84c2f', '#f0c419', '#70695d',
+  '#111111', '#0057ff', '#d84c2f', '#f0c419', '#70695d',
 ]
 
 export default function BudgetChart({ departments }: Props) {
@@ -51,23 +51,30 @@ export default function BudgetChart({ departments }: Props) {
         <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 60 }}>
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 10, fill: '#64748b' }}
+            tick={{ fontSize: 10, fill: '#5b5750', fontWeight: 700 }}
             angle={-35}
             textAnchor="end"
             interval={0}
+            axisLine={{ stroke: '#111111' }}
+            tickLine={{ stroke: '#111111' }}
           />
           <YAxis
             tickFormatter={formatM}
-            tick={{ fontSize: 10, fill: '#64748b' }}
+            tick={{ fontSize: 10, fill: '#5b5750', fontWeight: 700 }}
             width={55}
+            axisLine={{ stroke: '#111111' }}
+            tickLine={{ stroke: '#111111' }}
           />
           <Tooltip
             formatter={(value) => [formatM(Number(value)), 'Budget']}
             labelFormatter={(label, payload) => payload?.[0]?.payload?.full ?? label}
             contentStyle={{
-              border: '1px solid #d1d5db',
+              border: '2px solid #111111',
+              backgroundColor: '#fbf8f1',
+              borderRadius: 0,
+              boxShadow: 'none',
               fontSize: '11px',
-              padding: '4px 8px',
+              padding: '6px 10px',
             }}
           />
           <Bar dataKey="amount" radius={[0, 0, 0, 0]}>

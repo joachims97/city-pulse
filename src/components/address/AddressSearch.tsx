@@ -96,13 +96,13 @@ export default function AddressSearch({
   return (
     <div className="w-full">
       <div className="relative w-full max-w-lg">
-        <form onSubmit={handleSubmit} className="flex items-stretch gap-0 border border-gray-300 w-full">
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-0">
           <input
             type="text"
             value={address}
             onChange={(e) => handleChange(e.target.value)}
             placeholder={placeholder}
-            className="flex-1 px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-white border-r border-gray-300"
+            className="field-input min-w-0 flex-1 sm:border-r-0"
             disabled={isPending}
             autoComplete="postal-code"
             inputMode="numeric"
@@ -112,27 +112,27 @@ export default function AddressSearch({
           <button
             type="submit"
             disabled={isPending || address.length !== 5}
-            className="bg-blue-700 hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-medium px-4 py-1.5 whitespace-nowrap"
+            className="field-button whitespace-nowrap"
           >
-            {isPending ? 'Looking up...' : 'Find District'}
+            {isPending ? 'Looking up' : `Find ${browseLabel.replace(/^Browse by /, '')}`}
           </button>
         </form>
 
         {address.length > 0 && address.length < 5 && (
-          <div className="absolute left-0 right-0 top-full z-10 border border-t-0 border-gray-300 bg-white shadow-sm">
+          <div className="absolute left-0 right-0 top-full z-10 border-x-2 border-b-2 border-[var(--line)] bg-[var(--panel)]">
             {filteredZipSuggestions.length > 0 ? (
               filteredZipSuggestions.map((zip) => (
                 <button
                   key={zip}
                   type="button"
                   onClick={() => selectZipCode(zip)}
-                  className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50"
+                  className="block w-full border-t border-[rgba(17,17,17,0.16)] px-4 py-3 text-left text-sm text-[var(--ink)] transition hover:bg-[rgba(0,87,255,0.05)]"
                 >
                   {zip}
                 </button>
               ))
             ) : (
-              <div className="px-3 py-2 text-sm text-gray-500">
+              <div className="px-4 py-3 text-sm text-[var(--muted)]">
                 No ZIP codes for {cityName} match that prefix.
               </div>
             )}
@@ -141,17 +141,17 @@ export default function AddressSearch({
       </div>
 
       {error && (
-        <p className="mt-1.5 text-xs text-red-600">{error}</p>
+        <p className="mt-3 text-[0.72rem] uppercase tracking-[0.18em] text-[var(--red)]">{error}</p>
       )}
 
       {districtLinks.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1 items-center">
-          <span className="text-xs text-gray-400">{browseLabel}:</span>
+        <div className="district-link-section">
+          <span className="district-link-label">{browseLabel}</span>
           {districtLinks.map(({ ward, label }) => (
             <a
               key={ward}
               href={`/${cityKey}/ward/${ward}`}
-              className="text-xs px-2 py-0.5 border border-gray-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400"
+              className="link-plain pill-link"
             >
               {label}
             </a>

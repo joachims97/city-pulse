@@ -6,7 +6,7 @@ export default function EmptyState({
   tone?: 'muted' | 'error'
 }) {
   return (
-    <div className={`px-3 py-4 text-xs ${tone === 'error' ? 'text-red-600' : 'text-gray-400'}`}>
+    <div className={`empty-state ${tone === 'error' ? 'empty-state--error' : ''}`}>
       {message}
     </div>
   )

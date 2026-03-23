@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { shortenCompactLabel } from '@/lib/labels'
 import type { Complaint } from '@/services/complaintsService'
 import type { DistrictMapFeature } from '@/types/geo'
 import { ensureLeafletDefaults, geometryToFeature, MAP_ATTRIBUTION, MAP_TILE_URL } from './leaflet'
@@ -32,14 +33,14 @@ interface MarkerPalette {
 }
 
 const TOP_TYPE_PALETTE: MarkerPalette[] = [
-  { fillColor: '#60a5fa', strokeColor: '#1d4ed8' },
-  { fillColor: '#fbbf24', strokeColor: '#b45309' },
-  { fillColor: '#34d399', strokeColor: '#047857' },
+  { fillColor: '#0057ff', strokeColor: '#111111' },
+  { fillColor: '#d84c2f', strokeColor: '#111111' },
+  { fillColor: '#f0c419', strokeColor: '#111111' },
 ]
 
 const OTHER_PALETTE: MarkerPalette = {
-  fillColor: '#d1d5db',
-  strokeColor: '#4b5563',
+  fillColor: '#d7d2c6',
+  strokeColor: '#111111',
 }
 
 function formatDate(dateStr: string | null) {
@@ -65,19 +66,17 @@ function getComplaintTitle(complaint: Complaint) {
   return normalizeType(complaint.srType)
 }
 
+function getComplaintCompactTitle(complaint: Complaint) {
+  const title = getComplaintTitle(complaint)
+  return shortenCompactLabel(title) || title
+}
+
 function getComplaintSubtitle(complaint: Complaint) {
   return complaint.streetAddress ?? 'Address not provided'
 }
 
 function formatLegendLabel(label: string) {
-  const words = label.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return label
-
-  while (words.join(' ').length > 25 && words.length > 1) {
-    words.pop()
-  }
-
-  return words.join(' ')
+  return shortenCompactLabel(label) || label
 }
 
 function getTopTypeMetadata(complaints: Complaint[]) {
@@ -131,7 +130,7 @@ function getComplaintMarkerStyle(
   if (isSelected) {
     return {
       radius: 8,
-      color: '#0f172a',
+      color: '#111111',
       weight: 2,
       fillColor: palette.fillColor,
       fillOpacity: 0.96,
@@ -149,29 +148,29 @@ function getComplaintMarkerStyle(
 
 function ComplaintDetails({ complaint }: { complaint: Complaint | null }) {
   if (!complaint) {
-    return <div className="mt-2 text-sm text-gray-500">Select a 311 marker to inspect it.</div>
+    return <div className="mt-2 text-sm text-[var(--muted)]">Select a 311 marker to inspect it.</div>
   }
 
   return (
     <div className="mt-2 space-y-2">
       <div>
-        <div className="text-base font-semibold text-gray-900">{getComplaintTitle(complaint)}</div>
-        <div className="mt-1 text-sm text-gray-500">{getComplaintSubtitle(complaint)}</div>
+        <div className="text-base font-bold text-[var(--ink)]">{getComplaintTitle(complaint)}</div>
+        <div className="mt-1 text-sm uppercase tracking-[0.12em] text-[var(--muted)]">{getComplaintSubtitle(complaint)}</div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
         <span className={statusTagClass(complaint.status)}>{complaint.status}</span>
-        <span className="rounded border border-gray-200 px-2 py-1">{formatDate(complaint.createdDate)}</span>
+        <span className="border border-[var(--line)] px-2 py-1">{formatDate(complaint.createdDate)}</span>
         {complaint.closedDate && (
-          <span className="rounded border border-gray-200 px-2 py-1">Closed {formatDate(complaint.closedDate)}</span>
+          <span className="border border-[var(--line)] px-2 py-1">Closed {formatDate(complaint.closedDate)}</span>
         )}
       </div>
 
       {complaint.resolutionDays !== null && (
-        <div className="text-sm leading-6 text-gray-700">Resolution time: {complaint.resolutionDays} days</div>
+        <div className="text-sm leading-6 text-[var(--ink)]">Resolution time: {complaint.resolutionDays} days</div>
       )}
 
-      <div className="text-xs text-gray-500">Request ID: {complaint.srNumber}</div>
+      <div className="text-xs uppercase tracking-[0.14em] text-[var(--muted)]">Request ID: {complaint.srNumber}</div>
     </div>
   )
 }
@@ -192,28 +191,30 @@ function ComplaintList({
             key={complaint.srNumber}
             type="button"
             onClick={() => onFocus(complaint)}
-            className={`block w-full border-b border-gray-200 px-4 py-3 text-left transition hover:bg-blue-50 ${
-              complaint.srNumber === selectedComplaintId ? 'bg-blue-50' : 'bg-white'
+            className={`block w-full border-b border-[rgba(17,17,17,0.18)] px-5 py-4 text-left transition ${
+              complaint.srNumber === selectedComplaintId ? 'bg-[rgba(0,87,255,0.08)]' : 'bg-[var(--panel)] hover:bg-[rgba(0,87,255,0.04)]'
             }`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span
-                    className="inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                    className="inline-block h-2.5 w-2.5 flex-shrink-0"
                     style={{
                       backgroundColor: palette.fillColor,
                       boxShadow: `0 0 0 1px ${palette.strokeColor}`,
                     }}
                   />
-                  <div className="truncate text-sm font-medium text-gray-900">{getComplaintTitle(complaint)}</div>
+                  <div className="truncate text-sm font-bold text-[var(--ink)]">{getComplaintCompactTitle(complaint)}</div>
                 </div>
-                <div className="mt-1 truncate text-xs text-gray-500">{getComplaintSubtitle(complaint)}</div>
+                <div className="mt-1 truncate text-[0.68rem] uppercase tracking-[0.14em] text-[var(--muted)]">
+                  {getComplaintSubtitle(complaint)}
+                </div>
               </div>
               <span className={`flex-shrink-0 ${statusTagClass(complaint.status)}`}>{complaint.status}</span>
             </div>
 
-            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-500">
+            <div className="mt-2 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
               <span>{formatDate(complaint.createdDate)}</span>
               <span>•</span>
               <span>{complaint.srNumber}</span>
@@ -365,10 +366,10 @@ export default function ComplaintMapExplorer({
         const districtFeature = geometryToFeature(district.geometry, { districtId: district.districtId })
         const districtLayer = L.geoJSON(districtFeature as GeoJSON.GeoJsonObject, {
           style: {
-            color: '#1d4ed8',
+            color: '#111111',
             weight: 2,
-            fillColor: '#bfdbfe',
-            fillOpacity: 0.14,
+            fillColor: '#d7d2c6',
+            fillOpacity: 0.5,
           },
         })
 
@@ -471,19 +472,19 @@ export default function ComplaintMapExplorer({
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2.15fr)_22rem]">
-      <div className="border-b border-gray-200 bg-white xl:border-b-0 xl:border-r xl:border-gray-200">
-        <div className="relative h-[22rem] bg-slate-50 sm:h-[24rem] xl:h-[40rem]">
+      <div className="border-b border-[rgba(17,17,17,0.18)] bg-[var(--panel)] xl:border-b-0 xl:border-r xl:border-[rgba(17,17,17,0.18)]">
+        <div className="relative h-[22rem] bg-[#e7dfcf] sm:h-[24rem] xl:h-[40rem]">
           <div
             ref={mapRef}
             className="h-full w-full"
             aria-label={`311 map for ${districtName} ${districtLabel}`}
           />
 
-          <div className="pointer-events-none absolute right-3 top-3 z-[900] flex max-w-[14rem] flex-col gap-1 rounded border border-gray-200 bg-white/95 px-3 py-2 text-xs text-gray-600 shadow-sm">
+          <div className="pointer-events-none absolute right-3 top-3 z-[900] flex max-w-[15rem] flex-col gap-2 border-2 border-[var(--line)] bg-[rgba(251,248,241,0.96)] px-3 py-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">
             {legendEntries.map((entry) => (
               <span key={entry.label} className="inline-flex items-start gap-1.5">
                 <span
-                  className="mt-[2px] inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                  className="mt-[2px] inline-block h-2.5 w-2.5 flex-shrink-0"
                   style={{
                     backgroundColor: entry.fillColor,
                     boxShadow: `0 0 0 1px ${entry.strokeColor}`,
@@ -495,33 +496,33 @@ export default function ComplaintMapExplorer({
           </div>
 
           {isLoading && (
-            <div className="pointer-events-none absolute inset-0 z-[850] flex items-center justify-center bg-white/70 text-xs text-gray-500">
+            <div className="pointer-events-none absolute inset-0 z-[850] flex items-center justify-center bg-[rgba(251,248,241,0.78)] text-[0.72rem] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">
               Loading 311 map...
             </div>
           )}
 
           {!isLoading && !error && mappableComplaints.length === 0 && (
-            <div className="pointer-events-none absolute inset-0 z-[850] flex items-center justify-center bg-white/80 px-6 text-center text-sm text-gray-500">
+            <div className="pointer-events-none absolute inset-0 z-[850] flex items-center justify-center bg-[rgba(251,248,241,0.82)] px-6 text-center text-sm text-[var(--muted)]">
               No 311 locations are available for this district and time window.
             </div>
           )}
 
           {error && (
-            <div className="absolute inset-x-3 bottom-3 z-[900] border border-red-200 bg-white/95 px-3 py-2 text-xs text-red-600">
+            <div className="absolute inset-x-3 bottom-3 z-[900] border-2 border-[var(--red)] bg-[rgba(251,248,241,0.96)] px-3 py-2 text-[0.72rem] uppercase tracking-[0.16em] text-[var(--red)]">
               {error}
             </div>
           )}
         </div>
 
-        <div className="border-t border-gray-200 bg-white xl:hidden">
-          <div className="border-b border-gray-200 px-4 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+        <div className="border-t border-[rgba(17,17,17,0.18)] bg-[var(--panel)] xl:hidden">
+          <div className="border-b border-[rgba(17,17,17,0.18)] px-5 py-4">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
               Selected request
             </div>
             <ComplaintDetails complaint={selectedComplaint} />
           </div>
 
-          <div className="border-b border-gray-200 px-4 py-2 text-xs text-gray-600">
+          <div className="border-b border-[rgba(17,17,17,0.18)] px-5 py-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">
             Showing {mappableComplaints.length} mapped requests
           </div>
 
@@ -536,15 +537,15 @@ export default function ComplaintMapExplorer({
         </div>
       </div>
 
-      <div className="hidden min-h-[24rem] flex-col bg-white xl:flex xl:max-h-[40rem]">
-        <div className="border-b border-gray-200 px-4 py-3">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+      <div className="hidden min-h-[24rem] flex-col bg-[var(--panel)] xl:flex xl:max-h-[40rem]">
+        <div className="border-b border-[rgba(17,17,17,0.18)] px-5 py-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
             Selected request
           </div>
           <ComplaintDetails complaint={selectedComplaint} />
         </div>
 
-        <div className="border-b border-gray-200 px-4 py-2 text-xs text-gray-600">
+        <div className="border-b border-[rgba(17,17,17,0.18)] px-5 py-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">
           Showing {mappableComplaints.length} mapped requests
         </div>
 
