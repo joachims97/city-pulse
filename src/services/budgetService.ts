@@ -303,8 +303,7 @@ async function extractPhiladelphiaBudgetText(url: string): Promise<string> {
 async function extractPdfText(url: string): Promise<string> {
   if (pdfTextCache.has(url)) return pdfTextCache.get(url)!
 
-  const dynamicRequire = eval('require') as NodeRequire
-  const { PDFParse } = dynamicRequire('pdf-parse') as typeof import('pdf-parse')
+  const { PDFParse } = await import('pdf-parse')
   const parser = new PDFParse({
     url,
     httpHeaders: { 'User-Agent': 'CityPulse/1.0' },

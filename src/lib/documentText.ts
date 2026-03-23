@@ -72,8 +72,7 @@ async function extractDocumentTextFromBuffer(
 }
 
 async function extractPdfTextFromBuffer(buffer: Buffer): Promise<string | null> {
-  const dynamicRequire = eval('require') as NodeRequire
-  const { PDFParse } = dynamicRequire('pdf-parse') as typeof import('pdf-parse')
+  const { PDFParse } = await import('pdf-parse')
   const parser = new PDFParse({ data: buffer })
 
   try {

@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ioredis must stay server-side (Next.js 14 uses 'experimental.serverComponentsExternalPackages')
+  // These packages should stay server-side in the Vercel build.
   experimental: {
-    serverComponentsExternalPackages: ['ioredis', '@prisma/client', 'prisma'],
+    serverComponentsExternalPackages: ['ioredis', '@prisma/client', 'prisma', 'pdf-parse'],
   },
 
   images: {
@@ -17,8 +17,6 @@ const nextConfig = {
       },
     ],
   },
-
-  transpilePackages: ['react-leaflet'],
 }
 
 export default nextConfig
