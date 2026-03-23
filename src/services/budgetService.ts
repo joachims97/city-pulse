@@ -314,7 +314,7 @@ async function extractPdfText(url: string): Promise<string> {
   }
 
   const buffer = Buffer.from(await res.arrayBuffer())
-  const pdfParse = (await import('pdf-parse')).default
+  const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default
   const result = await pdfParse(buffer)
   const text = result.text ?? ''
   pdfTextCache.set(url, text)

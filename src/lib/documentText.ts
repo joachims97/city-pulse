@@ -72,7 +72,7 @@ async function extractDocumentTextFromBuffer(
 }
 
 async function extractPdfTextFromBuffer(buffer: Buffer): Promise<string | null> {
-  const pdfParse = (await import('pdf-parse')).default
+  const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default
   const result = await pdfParse(buffer)
   return result.text ?? null
 }
