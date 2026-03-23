@@ -3,7 +3,13 @@ import { normalizePositiveInt, runAgendaBackfill } from '@/services/agendaCron'
 
 export const maxDuration = 300
 
-export async function GET(req: NextRequest) {
+interface Props {
+  params: {
+    cityKey: string
+  }
+}
+
+export async function GET(req: NextRequest, { params }: Props) {
   const expectedToken = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
 
@@ -17,14 +23,14 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await runAgendaBackfill({
-      cityKey: req.nextUrl.searchParams.get('city'),
+      cityKey: params.cityKey,
       days: normalizePositiveInt(req.nextUrl.searchParams.get('days'), 7),
       limit: normalizePositiveInt(req.nextUrl.searchParams.get('limit'), 25),
     })
 
     return NextResponse.json(result)
   } catch (err) {
-    console.error('[API /cron/agenda-backfill]', err)
+    console.error(`[API /cron/agenda-backfill/${params.cityKey}]`, err)
     if (err instanceof Error && err.message === 'Unknown city') {
       return NextResponse.json({ error: 'Unknown city' }, { status: 400 })
     }

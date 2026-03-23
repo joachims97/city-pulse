@@ -303,16 +303,22 @@ async function extractPhiladelphiaBudgetText(url: string): Promise<string> {
 async function extractPdfText(url: string): Promise<string> {
   if (pdfTextCache.has(url)) return pdfTextCache.get(url)!
 
-  const { PDFParse } = await import('pdf-parse')
-  const parser = new PDFParse({
-    url,
-    httpHeaders: { 'User-Agent': 'CityPulse/1.0' },
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'CityPulse/1.0' },
+    next: { revalidate: 0 },
+    signal: AbortSignal.timeout(20000),
   })
 
-  const result = await parser.getText()
-  await parser.destroy()
-  pdfTextCache.set(url, result.text)
-  return result.text
+  if (!res.ok) {
+    throw new Error(`Budget PDF fetch failed: ${res.status}`)
+  }
+
+  const buffer = Buffer.from(await res.arrayBuffer())
+  const pdfParse = (await import('pdf-parse')).default
+  const result = await pdfParse(buffer)
+  const text = result.text ?? ''
+  pdfTextCache.set(url, text)
+  return text
 }
 
 function parsePhiladelphiaSectionNames(text: string): Record<number, string> {

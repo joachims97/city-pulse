@@ -72,15 +72,9 @@ async function extractDocumentTextFromBuffer(
 }
 
 async function extractPdfTextFromBuffer(buffer: Buffer): Promise<string | null> {
-  const { PDFParse } = await import('pdf-parse')
-  const parser = new PDFParse({ data: buffer })
-
-  try {
-    const result = await parser.getText()
-    return result.text
-  } finally {
-    await parser.destroy()
-  }
+  const pdfParse = (await import('pdf-parse')).default
+  const result = await pdfParse(buffer)
+  return result.text ?? null
 }
 
 function looksLikePdf(buffer: Buffer, contentType: string, url: string): boolean {

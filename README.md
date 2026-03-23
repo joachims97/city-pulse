@@ -66,13 +66,14 @@ Full text hydration and summary generation are handled by a secret-protected Ver
 
 - `GET /api/cron/agenda-backfill`
 - Protected by `Authorization: Bearer ${CRON_SECRET}`
-- Scheduled in [`vercel.json`](/Users/joachim/Documents/city%20tracker/citypulse/vercel.json) for daily runs at `07:00 UTC` (3 AM Eastern during daylight saving time)
+- Scheduled in [`vercel.json`](/Users/joachim/Documents/city%20tracker/citypulse/vercel.json) as daily per-city jobs, staggered across the morning UTC hours to keep each run within Vercel function limits
 
 The cron job:
 
 - hydrates missing full legislation text
 - summarizes missing non-Chicago items from the last 7 days
 - only touches rows that are still missing `fullText` or `aiSummary`
+- defaults to a bounded batch size so the scheduled jobs do not time out
 
 ## Production notes
 
