@@ -71,6 +71,7 @@ export const NYC: CityConfig = {
     yearFilter: 'This Year',
     typeFilter: 'All Types',
     maxItems: 12,
+    hydrateDateFromDetail: true,
   },
   districtName: 'District',
   districtCount: 51,

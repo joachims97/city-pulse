@@ -152,9 +152,11 @@ const FULL_AGENDA_MAX_ITEMS = 250
 const DEFAULT_STALE_AFTER_DAYS = 120
 const DEFAULT_LA_LOOKBACK_DAYS = 30
 const SUMMARY_DISABLED_CITY_KEYS = new Set(['chicago'])
+const legistarDetailDateCache = new Map<string, string | null>()
+const legistarPublicSourceCache = new Map<string, string | null>()
 
 export async function getAgendaItems(city: CityConfig, view: AgendaView = 'preview'): Promise<AgendaEvent[]> {
-  const cacheKey = `${city.key}:agenda:v6:current:${view}`
+  const cacheKey = `${city.key}:agenda:v9:current:${view}`
 
   return getCached(
     cacheKey,
@@ -463,7 +465,12 @@ async function fetchLegistarMatters(
     )
 
     if (items.length && mattersAreFresh(items, provider.staleAfterDays ?? DEFAULT_STALE_AFTER_DAYS)) {
-      return items.slice(0, maxItems)
+      const sliced = items.slice(0, maxItems)
+      if (!provider.hydratePublicSourceFromSearch) {
+        return sliced
+      }
+
+      return hydrateLegistarPublicSourceUrls(provider, sliced)
     }
   } catch (err) {
     lastError = err
@@ -554,6 +561,76 @@ function mapLegistarMatter(
   }
 }
 
+async function hydrateLegistarPublicSourceUrls(
+  provider: LegistarMattersAgendaProvider,
+  items: RawAgendaItem[]
+): Promise<RawAgendaItem[]> {
+  const detailBaseUrl = provider.detailBaseUrl
+  if (!detailBaseUrl) return items
+
+  const candidates = items.filter((item) => item.matterFile)
+  if (!candidates.length) return items
+
+  const hydratedUrls = new Map<string, string | null>()
+  await runWithConcurrency(candidates, 4, async (item) => {
+    const url = await fetchLegistarPublicDetailUrl(detailBaseUrl, item.matterFile!)
+    hydratedUrls.set(item.externalId, url)
+  })
+
+  return items.map((item) => ({
+    ...item,
+    sourceUrl: hydratedUrls.get(item.externalId) ?? item.sourceUrl,
+  }))
+}
+
+async function fetchLegistarPublicDetailUrl(
+  detailBaseUrl: string,
+  matterFile: string
+): Promise<string | null> {
+  const cacheKey = `${detailBaseUrl}|${matterFile}`
+  if (legistarPublicSourceCache.has(cacheKey)) {
+    return legistarPublicSourceCache.get(cacheKey) ?? null
+  }
+
+  try {
+    const searchUrl = new URL('Legislation.aspx', ensureTrailingSlash(detailBaseUrl))
+    const initialHtml = await fetchText(searchUrl.toString())
+    const form = new URLSearchParams({
+      __EVENTTARGET: 'ctl00$ContentPlaceHolder1$btnSearch',
+      __EVENTARGUMENT: '',
+      __VIEWSTATE: getHiddenInputValue(initialHtml, '__VIEWSTATE'),
+      __VIEWSTATEGENERATOR: getHiddenInputValue(initialHtml, '__VIEWSTATEGENERATOR'),
+      __PREVIOUSPAGE: getHiddenInputValue(initialHtml, '__PREVIOUSPAGE'),
+      'ctl00$ContentPlaceHolder1$txtSearch': matterFile,
+      'ctl00$ContentPlaceHolder1$lstYears': 'This Year',
+      'ctl00$ContentPlaceHolder1$lstTypeBasic': 'All Types',
+      'ctl00$ContentPlaceHolder1$chkID': 'on',
+      'ctl00$ContentPlaceHolder1$chkText': 'on',
+    })
+
+    const res = await fetch(searchUrl.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString(),
+      signal: AbortSignal.timeout(10000),
+      next: { revalidate: 0 },
+    })
+
+    if (!res.ok) {
+      throw new Error(`Legistar public search error: ${res.status}`)
+    }
+
+    const html = await res.text()
+    const hrefMatch = html.match(/href="([^"]*LegislationDetail\.aspx[^"]*)"/i)
+    const url = hrefMatch ? resolveUrl(detailBaseUrl, decodeHtml(hrefMatch[1])) : null
+    legistarPublicSourceCache.set(cacheKey, url)
+    return url
+  } catch {
+    legistarPublicSourceCache.set(cacheKey, null)
+    return null
+  }
+}
+
 async function fetchLegistarHtml(
   provider: LegistarHtmlAgendaProvider,
   maxItemsOverride?: number
@@ -587,7 +664,13 @@ async function fetchLegistarHtml(
   }
 
   const html = await res.text()
-  return parseLegistarHtmlRows(html, provider.baseUrl).slice(0, maxItems)
+  const items = parseLegistarHtmlRows(html, provider.baseUrl).slice(0, maxItems)
+
+  if (!provider.hydrateDateFromDetail) {
+    return items
+  }
+
+  return hydrateLegistarHtmlDates(items)
 }
 
 async function fetchLAClerkConnect(
@@ -1181,6 +1264,53 @@ function parseLegistarHtmlRows(html: string, baseUrl: string): RawAgendaItem[] {
   return dedupeItems(items)
 }
 
+async function hydrateLegistarHtmlDates(items: RawAgendaItem[]): Promise<RawAgendaItem[]> {
+  const missingItems = items.filter((item) => !item.matterDate && item.sourceUrl)
+  if (!missingItems.length) return items
+
+  const hydratedDates = new Map<string, string | null>()
+
+  await runWithConcurrency(missingItems, 6, async (item) => {
+    if (!item.sourceUrl) return
+    hydratedDates.set(item.externalId, await fetchLegistarDetailDate(item.sourceUrl))
+  })
+
+  return items.map((item) => ({
+    ...item,
+    matterDate: item.matterDate ?? hydratedDates.get(item.externalId) ?? null,
+  }))
+}
+
+async function fetchLegistarDetailDate(url: string): Promise<string | null> {
+  if (legistarDetailDateCache.has(url)) {
+    return legistarDetailDateCache.get(url) ?? null
+  }
+
+  try {
+    const html = await fetchText(url)
+    const date = firstNonEmpty(
+      extractDetailSpanDate(html, 'lblOnAgenda2'),
+      extractDetailSpanDate(html, 'lblEnactmentDate2')
+    )
+    legistarDetailDateCache.set(url, date)
+    return date
+  } catch {
+    legistarDetailDateCache.set(url, null)
+    return null
+  }
+}
+
+function extractDetailSpanDate(html: string, fieldId: string): string | null {
+  const match = html.match(new RegExp(`id="[^\"]*${fieldId}"[^>]*>([\\s\\S]*?)<\\/span>`, 'i'))
+  const raw = match?.[1]
+    ?.replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return normalizeDate(raw ?? null)
+}
+
 function parseLAClerkRows(html: string, baseUrl: string): RawAgendaItem[] {
   const tableHtml = extractTableHtml(html, 'CFIResultList')
   if (!tableHtml) return []
@@ -1654,6 +1784,23 @@ function decodeHtml(value: string): string {
 
 function resolveUrl(baseUrl: string, href: string): string {
   return new URL(href, baseUrl).toString()
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>
+): Promise<void> {
+  const queue = [...items]
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    for (;;) {
+      const item = queue.shift()
+      if (!item) return
+      await worker(item)
+    }
+  })
+
+  await Promise.all(runners)
 }
 
 function normalizeChicagoStatus(value: string | undefined | null): string | null {

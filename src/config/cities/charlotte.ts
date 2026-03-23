@@ -82,6 +82,7 @@ export const CHARLOTTE: CityConfig = {
     bodyName: 'City Council',
     staleAfterDays: 180,
     maxItems: 12,
+    hydratePublicSourceFromSearch: true,
     excludeMatterTypes: [
       'Budget Workshop',
       'Strategy Session',

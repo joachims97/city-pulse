@@ -135,6 +135,7 @@ export interface LegistarHtmlAgendaProvider {
   typeFilter?: string
   searchText?: string
   maxItems?: number
+  hydrateDateFromDetail?: boolean
 }
 
 export interface LAClerkConnectAgendaProvider {
@@ -161,6 +162,7 @@ export interface LegistarMattersAgendaProvider {
   bodyName?: string
   staleAfterDays?: number
   maxItems?: number
+  hydratePublicSourceFromSearch?: boolean
   excludeMatterTypes?: string[]
   excludeTitlePatterns?: string[]
   maxAgendaLeadDays?: number

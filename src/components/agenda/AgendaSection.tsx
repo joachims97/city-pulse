@@ -14,6 +14,14 @@ function formatDate(dateStr: string) {
   })
 }
 
+function getAgendaSortTime(matterDate: string | null, eventDate: string | null) {
+  const value = matterDate ?? eventDate
+  if (!value) return Number.NEGATIVE_INFINITY
+
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY
+}
+
 interface AgendaSectionProps {
   cityKey?: string
   view?: 'preview' | 'full'
@@ -32,7 +40,18 @@ export default async function AgendaSection({
 
   try {
     const events = await getAgendaItems(city, view)
-    const rows = events.flatMap((event) => event.items.map((item) => ({ event, item })))
+    const rows = events
+      .flatMap((event) => event.items.map((item) => ({ event, item })))
+      .sort((a, b) => {
+        const timeDiff = getAgendaSortTime(b.item.matterDate, b.event.eventDate) - getAgendaSortTime(a.item.matterDate, a.event.eventDate)
+        if (timeDiff !== 0) return timeDiff
+
+        const fileA = a.item.matterFile ?? ''
+        const fileB = b.item.matterFile ?? ''
+        if (fileA !== fileB) return fileB.localeCompare(fileA)
+
+        return a.item.matterTitle.localeCompare(b.item.matterTitle)
+      })
     const pagination = view === 'full' ? paginateItems(rows, page, pageSize) : null
     const visibleRows = pagination ? pagination.items : rows.slice(0, 12)
 
