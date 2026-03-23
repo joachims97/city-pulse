@@ -54,7 +54,7 @@ export async function getInspections(
   days = 365,
   view: DataView = 'preview'
 ): Promise<Inspection[]> {
-  const cacheKey = `${city.key}:inspections:v9:ward:${wardId}:${days}d:${view}`
+  const cacheKey = `${city.key}:inspections:v10:ward:${wardId}:${days}d:${view}`
 
   return getCached(
     cacheKey,

@@ -2,7 +2,7 @@ import { getCached } from '@/lib/cache'
 import { arcgisDateLiteral, arcgisQueryAll, combineArcGISWhere, envelopeFromBounds, getArcGISPoint } from '@/lib/arcgis'
 import { parseDistrictId } from '@/lib/districts'
 import { cartoSqlFetch } from '@/lib/carto'
-import { socrataFetch, socrataFetchAll, daysAgo } from '@/lib/socrata'
+import { socrataFetch, daysAgo } from '@/lib/socrata'
 import { CACHE_TTL } from '@/config/app'
 import type { ArcGISLayerSource, CityConfig } from '@/types/city'
 import { isArcGISLayerSource } from '@/types/city'
@@ -31,13 +31,15 @@ export interface ComplaintsStats {
 
 type DataView = 'preview' | 'full'
 
+const MAX_FULL_COMPLAINTS = 1000
+
 export async function getComplaints(
   wardId: number,
   city: CityConfig,
   days = 90,
   view: DataView = 'preview'
 ): Promise<{ complaints: Complaint[]; stats: ComplaintsStats }> {
-  const cacheKey = `${city.key}:311:v4:ward:${wardId}:${days}d:${view}`
+  const cacheKey = `${city.key}:311:v5:ward:${wardId}:${days}d:${view}`
 
   return getCached(
     cacheKey,
@@ -94,7 +96,7 @@ async function fetchComplaints(
     }
 
     const raw = view === 'full'
-      ? await socrataFetchAll<Complaint311Raw>(datasetId, query, city, undefined, 2000)
+      ? await socrataFetch<Complaint311Raw>(datasetId, { ...query, $limit: MAX_FULL_COMPLAINTS }, city)
       : await socrataFetch<Complaint311Raw>(datasetId, { ...query, $limit: 200 }, city)
 
     const complaints: Complaint[] = raw.map((r) => {
@@ -122,8 +124,9 @@ async function fetchComplaints(
       }
     })
 
-    const stats = computeStats(complaints)
-    return { complaints, stats }
+    const cappedComplaints = view === 'full' ? complaints.slice(0, MAX_FULL_COMPLAINTS) : complaints
+    const stats = computeStats(cappedComplaints)
+    return { complaints: cappedComplaints, stats }
   } catch {
     throw new Error(`Failed to load 311 data for ${city.key}`)
   }
@@ -225,7 +228,7 @@ async function fetchArcGISComplaints(
     })
   }
 
-  return view === 'full' ? complaints : complaints.slice(0, 200)
+  return view === 'full' ? complaints.slice(0, MAX_FULL_COMPLAINTS) : complaints.slice(0, 200)
 }
 
 async function fetchPhiladelphiaComplaints(
@@ -266,7 +269,7 @@ async function fetchPhiladelphiaComplaints(
         AND lat BETWEEN ${bbox.minLat} AND ${bbox.maxLat}
         AND lon BETWEEN ${bbox.minLng} AND ${bbox.maxLng}
       ORDER BY requested_datetime DESC
-      LIMIT ${view === 'full' ? 2000 : 500}
+      LIMIT ${view === 'full' ? MAX_FULL_COMPLAINTS : 500}
     `.replace(/\s+/g, ' ').trim()
   )
 

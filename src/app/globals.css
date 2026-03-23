@@ -338,12 +338,6 @@
     min-width: 0;
   }
 
-  .budget-panel-total {
-    justify-self: end;
-    text-align: right;
-    white-space: nowrap;
-  }
-
   .action-link {
     font-size: 0.66rem;
     font-weight: 700;

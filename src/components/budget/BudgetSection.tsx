@@ -18,11 +18,6 @@ export default async function BudgetSection({ cityKey = 'chicago' }: { cityKey?:
       <div className="panel panel-accent-yellow">
         <div className="panel-header budget-panel-header">
           <span className="budget-panel-title">City Budget{budget.fiscalYear ? ` — FY${budget.fiscalYear}` : ''}</span>
-          {budget.totalBudget > 0 && (
-            <span className="budget-panel-total text-[0.7rem] font-bold tracking-[0.18em] text-[var(--muted)]">
-              {formatBudget(budget.totalBudget)} total
-            </span>
-          )}
         </div>
 
         {budget.departments.length === 0 ? (
