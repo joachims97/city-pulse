@@ -1,0 +1,94 @@
+name: Agenda Backfill
+
+on:
+  schedule:
+    - cron: '7 3 * * *'
+      timezone: America/New_York
+  workflow_dispatch:
+    inputs:
+      city:
+        description: Optional city key (leave blank to run all cities)
+        required: false
+        type: string
+      days:
+        description: Number of days of recent legislation to backfill
+        required: false
+        default: '7'
+        type: string
+      limit:
+        description: Max items to queue per city
+        required: false
+        default: '25'
+        type: string
+
+concurrency:
+  group: agenda-backfill-${{ github.event_name }}-${{ github.event.inputs.city || 'scheduled' }}
+  cancel-in-progress: false
+
+jobs:
+  scheduled:
+    if: github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        city: [nyc, sf, la, philadelphia, charlotte, raleigh, chicago]
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      CHICAGO_DATA_APP_TOKEN: ${{ secrets.CHICAGO_DATA_APP_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run agenda backfill
+        run: npm run backfill:agenda -- --city "${{ matrix.city }}" --days 7 --limit 25
+
+  manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      CHICAGO_DATA_APP_TOKEN: ${{ secrets.CHICAGO_DATA_APP_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run agenda backfill
+        run: |
+          CMD=(npm run backfill:agenda -- --days "${{ github.event.inputs.days || '7' }}" --limit "${{ github.event.inputs.limit || '25' }}")
+          if [ -n "${{ github.event.inputs.city }}" ]; then
+            CMD+=(--city "${{ github.event.inputs.city }}")
+          fi
+          "${CMD[@]}"

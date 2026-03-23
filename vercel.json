@@ -1,34 +1,4 @@
 {
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "crons": [
-    {
-      "path": "/api/cron/agenda-backfill/nyc",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/agenda-backfill/sf",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/agenda-backfill/la",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/agenda-backfill/philadelphia",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/agenda-backfill/charlotte",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/agenda-backfill/raleigh",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/agenda-backfill/chicago",
-      "schedule": "0 13 * * *"
-    }
-  ]
+  "regions": ["iad1"]
 }
