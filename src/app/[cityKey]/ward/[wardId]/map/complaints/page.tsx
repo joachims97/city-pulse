@@ -61,15 +61,17 @@ export default async function WardComplaintMapPage({ params, searchParams }: Pro
     complaints = data.complaints
   } catch {
     return (
-      <div className="w-full px-4 py-4">
-        <div className="mb-4 flex items-center justify-between border border-gray-300 px-3 py-2">
-          <div>
-            <h1 className="text-sm font-bold text-gray-900">
-              {city.displayName} — {districtDisplayName} — 311 Map
-            </h1>
+      <div className="page-shell space-y-6">
+        <section className="page-rule grid gap-6 lg:grid-cols-[10rem_minmax(0,1fr)]">
+          <div className="page-rail">
+            <div className="page-kicker">311 Map</div>
           </div>
-        </div>
-        <div className="overflow-hidden border border-gray-300 bg-white">
+          <div className="space-y-3">
+            <h1 className="page-title max-w-[10ch]">{districtDisplayName}</h1>
+            <p className="page-subtitle">Mapped 311 service requests.</p>
+          </div>
+        </section>
+        <div className="panel panel-accent-red overflow-hidden">
           <EmptyState message="311 map data is temporarily unavailable." tone="error" />
         </div>
       </div>
@@ -81,41 +83,33 @@ export default async function WardComplaintMapPage({ params, searchParams }: Pro
   ).length
 
   return (
-    <div className="w-full px-4 py-4">
-      <div className="mb-3 text-xs text-gray-500">
-        <a href="/" className="text-blue-700 hover:underline">Home</a>
-        <span className="mx-1.5">›</span>
-        <a href={`/${city.key}`} className="text-blue-700 hover:underline">{city.displayName}</a>
-        <span className="mx-1.5">›</span>
-        <a href={`/${city.key}/ward/${wardId}`} className="text-blue-700 hover:underline">{districtDisplayName}</a>
-        <span className="mx-1.5">›</span>
-        <span>311 Map</span>
-      </div>
-
-      <div className="mb-4 flex items-center justify-between border border-gray-300 px-3 py-2">
-        <div>
-          <h1 className="text-sm font-bold text-gray-900">
-            {city.displayName} — {districtDisplayName} — 311 Map
-          </h1>
-          <p className="mt-0.5 text-xs text-gray-500">
-            {getTimeWindowLabel(resolvedDays)} · {mapComplaintCount} mapped requests
-          </p>
-        </div>
-        <div className="flex items-center gap-3 text-xs">
-          <a href={`/${city.key}/ward/${wardId}/table/complaints?days=${resolvedDays}`} className="text-blue-700 hover:underline">
-            Table view
-          </a>
-          <a href={`/${city.key}/ward/${wardId}`} className="text-blue-700 hover:underline">
-            Back to dashboard
-          </a>
-        </div>
-      </div>
-
-      <div className="overflow-hidden border border-gray-300 bg-white">
-        <div className="border-b border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700">
-          311 Service Requests — {city.districtName} {districtLabel}
+    <div className="page-shell space-y-6">
+      <section className="page-rule grid gap-6 lg:grid-cols-[10rem_minmax(0,1fr)]">
+        <div className="page-rail">
+          <div className="page-kicker">311 Map</div>
+          <div className="breadcrumbs">
+            <a href="/">Home</a>
+            <span className="breadcrumbs-sep">/</span>
+            <a href={`/${city.key}`}>{city.displayName}</a>
+            <span className="breadcrumbs-sep">/</span>
+            <a href={`/${city.key}/ward/${wardId}`}>{districtDisplayName}</a>
+            <span className="breadcrumbs-sep">/</span>
+            <span>Map</span>
+          </div>
         </div>
 
+        <div className="space-y-3">
+          <h1 className="page-title max-w-[10ch]">311 request map</h1>
+          <p className="page-subtitle">{getTimeWindowLabel(resolvedDays)} - {mapComplaintCount} mapped requests.</p>
+          <div>
+            <a href={`/${city.key}/ward/${wardId}/table/complaints?days=${resolvedDays}`} className="action-link action-link-route">
+              Open table view
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <div className="panel panel-accent-red overflow-hidden">
         <ComplaintMapExplorer
           cityKey={city.key}
           districtName={city.districtName}

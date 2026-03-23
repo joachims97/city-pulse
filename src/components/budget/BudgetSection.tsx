@@ -15,11 +15,13 @@ export default async function BudgetSection({ cityKey = 'chicago' }: { cityKey?:
     const budget = await getBudget(city)
 
     return (
-      <div className="panel">
-        <div className="panel-header">
-          <span>City Budget{budget.fiscalYear ? ` — FY${budget.fiscalYear}` : ''}</span>
+      <div className="panel panel-accent-yellow">
+        <div className="panel-header budget-panel-header">
+          <span className="budget-panel-title">City Budget{budget.fiscalYear ? ` — FY${budget.fiscalYear}` : ''}</span>
           {budget.totalBudget > 0 && (
-            <span className="text-gray-600 font-normal">{formatBudget(budget.totalBudget)} total</span>
+            <span className="budget-panel-total text-[0.7rem] font-bold tracking-[0.18em] text-[var(--muted)]">
+              {formatBudget(budget.totalBudget)} total
+            </span>
           )}
         </div>
 
@@ -27,15 +29,27 @@ export default async function BudgetSection({ cityKey = 'chicago' }: { cityKey?:
           <EmptyState message="Budget data not available for this city." />
         ) : (
           <>
-            <BudgetChart departments={budget.departments.slice(0, 10)} />
-            <div className="border-t border-gray-200">
-              <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200">Top Departments</div>
+            <div className="px-5 pb-2 pt-4">
+              <div className="stat-label">Total budget</div>
+              <div className="stat-value mt-2">{formatBudget(budget.totalBudget)}</div>
+            </div>
+            <div className="border-t border-[rgba(17,17,17,0.18)] px-2 pb-2 pt-4">
+              <BudgetChart departments={budget.departments.slice(0, 10)} />
+            </div>
+            <div className="border-t border-[rgba(17,17,17,0.18)]">
+              <div className="border-b border-[rgba(17,17,17,0.18)] px-5 py-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">
+                Top departments
+              </div>
               {budget.departments.slice(0, 8).map((dept) => (
                 <div key={dept.department} className="data-row">
-                  <span className="text-xs text-gray-700 flex-1 truncate">{dept.department}</span>
-                  <span className="text-xs font-medium text-gray-900 ml-2">{formatBudget(dept.amount)}</span>
+                  <span className="flex-1 truncate text-[0.8rem] font-medium text-[var(--ink)]">{dept.department}</span>
+                  <span className="ml-2 text-[0.75rem] font-bold text-[var(--ink)]">{formatBudget(dept.amount)}</span>
                   {dept.percentChange !== null && (
-                    <span className={`text-xs ml-2 w-10 text-right ${dept.percentChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span
+                      className={`ml-2 w-12 text-right text-[0.68rem] font-bold uppercase tracking-[0.16em] ${
+                        dept.percentChange >= 0 ? 'text-[var(--green)]' : 'text-[var(--red)]'
+                      }`}
+                    >
                       {dept.percentChange >= 0 ? '+' : ''}{dept.percentChange.toFixed(1)}%
                     </span>
                   )}
@@ -48,7 +62,7 @@ export default async function BudgetSection({ cityKey = 'chicago' }: { cityKey?:
     )
   } catch {
     return (
-      <div className="panel">
+      <div className="panel panel-accent-yellow">
         <div className="panel-header">
           <span>City Budget</span>
         </div>

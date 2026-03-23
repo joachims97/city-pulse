@@ -12,10 +12,12 @@ import type { CityConfig } from '@/types/city'
 import { isArcGISLayerSource } from '@/types/city'
 import { SF_REPS } from '@/config/cities/sf'
 import { PHILLY_REPS } from '@/config/cities/philadelphia'
+import { LA_REPS } from '@/config/cities/la'
 
 const STATIC_REPS: Record<string, Record<number, { name: string; phone: string | null; website: string | null }>> = {
   sf: SF_REPS,
   philadelphia: PHILLY_REPS,
+  la: LA_REPS,
 }
 
 export interface RepresentativeData {
@@ -39,7 +41,7 @@ export async function getRepresentative(
   wardId: number,
   city: CityConfig
 ): Promise<RepresentativeData> {
-  const cacheKey = `${city.key}:representative:v2:${wardId}`
+  const cacheKey = `${city.key}:representative:v3:${wardId}`
 
   return getCached(
     cacheKey,

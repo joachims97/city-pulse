@@ -1,6 +1,7 @@
 import { getInspections } from '@/services/inspectionsService'
 import { getCity } from '@/config/cities'
 import { getDistrictLabel } from '@/lib/districts'
+import { shortenCompactLabel } from '@/lib/labels'
 import { paginateItems } from '@/lib/pagination'
 import EmptyState from '@/components/ui/EmptyState'
 import ExpandableRow from '@/components/ui/ExpandableRow'
@@ -12,8 +13,9 @@ function formatDate(dateStr: string | null) {
 }
 
 function ResultTag({ results, isFailed, isRecentFail }: { results: string | null; isFailed: boolean; isRecentFail: boolean }) {
-  const label = compactResult(results)
-  const normalized = label.toLowerCase()
+  const fullLabel = compactResult(results)
+  const label = shortenCompactLabel(fullLabel)
+  const normalized = fullLabel.toLowerCase()
 
   if (isRecentFail) return <span className="tag tag-red">Recent Fail</span>
   if (isFailed || normalized.includes('closed')) return <span className="tag tag-red">{label}</span>
@@ -76,7 +78,7 @@ export default async function InspectionsSection({
     inspections = await getInspections(wardId, city, days, view)
   } catch {
     return (
-      <div className="panel">
+      <div className="panel panel-accent-blue">
         <div className="panel-header">
           <span>Inspections — Last 12 months · {city.districtName} {districtLabel}</span>
         </div>
@@ -95,20 +97,20 @@ export default async function InspectionsSection({
   const visibleInspections = pagination ? pagination.items : inspections.slice(0, PREVIEW_ROW_COUNT)
 
   return (
-    <div className="panel">
+    <div className="panel panel-accent-blue">
       <div className="panel-header">
         <span>Inspections — Last 12 months · {city.districtName} {districtLabel}</span>
-        <div className="flex items-center gap-2">
-          <a href={mapHref} className="text-xs text-blue-700 hover:underline font-normal">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <a href={mapHref} className="action-link action-link-route">
             Map view
           </a>
           {view === 'full' ? (
-            <a href={`/${city.key}/ward/${wardId}`} className="text-xs text-blue-700 hover:underline font-normal">
+            <a href={`/${city.key}/ward/${wardId}`} className="action-link action-link-route">
               Back to dashboard
             </a>
           ) : (
-            <a href={expandHref} className="text-xs text-blue-700 hover:underline font-normal">
-              Click to expand
+            <a href={expandHref} className="action-link action-link-route">
+              Open full table
             </a>
           )}
           {passRate !== null && (
@@ -118,10 +120,12 @@ export default async function InspectionsSection({
       </div>
 
       {visibleRecentFails.length > 0 && (
-        <div className="border-b border-gray-200 bg-red-50 px-3 py-2">
-          <div className="text-xs font-semibold text-red-700 mb-1">Recent failures (last 30 days)</div>
+        <div className="border-b border-[rgba(17,17,17,0.18)] bg-[rgba(216,76,47,0.08)] px-5 py-4">
+          <div className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--red)]">
+            Recent failures / last 30 days
+          </div>
           {visibleRecentFails.map((i) => (
-            <div key={i.id} className="text-xs text-red-600">{i.dbaName} — {i.address}</div>
+            <div key={i.id} className="text-[0.78rem] text-[var(--red)]">{i.dbaName} — {i.address}</div>
           ))}
         </div>
       )}
@@ -146,13 +150,13 @@ export default async function InspectionsSection({
               summary={(
                 <>
                   <div className="flex-1 min-w-0">
-                    <span className="text-xs font-semibold text-gray-900 truncate block">{inspection.dbaName}</span>
-                    <span className="text-xs text-gray-600 truncate block">
+                    <span className="block truncate text-[0.84rem] font-bold text-[var(--ink)]">{inspection.dbaName}</span>
+                    <span className="block truncate text-[0.72rem] uppercase tracking-[0.14em] text-[var(--muted)]">
                       {normalize(inspection.address) !== normalize(inspection.dbaName)
                         ? inspection.address ?? 'Address not provided'
                         : inspection.inspectionType ?? 'Inspection'}
                     </span>
-                    <span className="text-xs text-gray-400 truncate block">
+                    <span className="block truncate text-[0.68rem] uppercase tracking-[0.14em] text-[var(--muted)]">
                       {formatDate(inspection.inspectionDate)}
                       {inspection.riskLevel ? ` · ${inspection.riskLevel}` : ''}
                     </span>
@@ -167,29 +171,29 @@ export default async function InspectionsSection({
                 </>
               )}
             >
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {shouldShowExpandedText(inspection.dbaName) && (
                   <div>
-                    <div className="font-medium text-gray-700">Business</div>
+                    <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Business</div>
                     <div className="expandable-row-text">{inspection.dbaName}</div>
                   </div>
                 )}
                 {shouldShowExpandedText(inspection.address) && (
                   <div>
-                    <div className="font-medium text-gray-700">Address</div>
+                    <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Address</div>
                     <div className="expandable-row-text">{inspection.address}</div>
                   </div>
                 )}
                 {inspection.inspectionType && (
                   <div>
-                    <div className="font-medium text-gray-700">Inspection</div>
+                    <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Inspection</div>
                     <div className="expandable-row-text">{inspection.inspectionType}</div>
                   </div>
                 )}
                 {inspection.violations && (
                   <div>
-                    <div className="font-medium text-gray-700">Violations</div>
-                    <div className="mt-1 space-y-1 text-red-700">
+                    <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Violations</div>
+                    <div className="mt-1 space-y-1 text-[var(--red)]">
                       {splitInspectionEntries(inspection.violations).map((violation) => (
                         <div key={violation} className="expandable-row-text">{violation}</div>
                       ))}
@@ -198,8 +202,8 @@ export default async function InspectionsSection({
                 )}
                 {inspection.details && (
                   <div>
-                    <div className="font-medium text-gray-700">Details</div>
-                    <div className="mt-1 space-y-1 text-gray-600">
+                    <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Details</div>
+                    <div className="mt-1 space-y-1 text-[var(--muted)]">
                       {splitInspectionEntries(inspection.details).map((detail) => (
                         <div key={detail} className="expandable-row-text">{detail}</div>
                       ))}

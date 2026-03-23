@@ -1,6 +1,7 @@
 import { getPermits } from '@/services/permitsService'
 import { getCity } from '@/config/cities'
 import { getDistrictLabel } from '@/lib/districts'
+import { shortenCompactLabel } from '@/lib/labels'
 import { paginateItems } from '@/lib/pagination'
 import EmptyState from '@/components/ui/EmptyState'
 import ExpandableRow from '@/components/ui/ExpandableRow'
@@ -58,7 +59,7 @@ export default async function PermitsSection({
     permits = await getPermits(wardId, city, days, view)
   } catch {
     return (
-      <div className="panel">
+      <div className="panel panel-accent-yellow">
         <div className="panel-header">
           <span>Building Permits — Last 6 months · {city.districtName} {districtLabel}</span>
         </div>
@@ -79,20 +80,20 @@ export default async function PermitsSection({
     : regular.slice(0, previewRegularCount)
 
   return (
-    <div className="panel">
+    <div className="panel panel-accent-yellow">
       <div className="panel-header">
         <span>Building Permits — Last 6 months · {city.districtName} {districtLabel}</span>
-        <div className="flex items-center gap-2">
-          <a href={mapHref} className="text-xs text-blue-700 hover:underline font-normal">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <a href={mapHref} className="action-link action-link-route">
             Map view
           </a>
           {view === 'full' ? (
-            <a href={`/${city.key}/ward/${wardId}`} className="text-xs text-blue-700 hover:underline font-normal">
+            <a href={`/${city.key}/ward/${wardId}`} className="action-link action-link-route">
               Back to dashboard
             </a>
           ) : (
-            <a href={expandHref} className="text-xs text-blue-700 hover:underline font-normal">
-              Click to expand
+            <a href={expandHref} className="action-link action-link-route">
+              Open full table
             </a>
           )}
           <span className="tag tag-blue">{permits.length} permits</span>
@@ -116,12 +117,13 @@ export default async function PermitsSection({
 
           {visibleLarge.length > 0 && (
             <>
-              <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-[rgba(17,17,17,0.18)] px-5 py-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">
                 <span>Large Developments</span>
                 <span className="tag tag-red">{view === 'full' ? visibleLarge.length : large.length}</span>
               </div>
               {visibleLarge.map((p) => {
                 const expandedWorkDescription = getExpandedWorkDescription(p.workDescription, p.fullWorkDescription)
+                const compactWorkLabel = shortenCompactLabel(p.workDescription ?? p.permitType) || p.workDescription || p.permitType
 
                 return (
                   <ExpandableRow
@@ -129,38 +131,38 @@ export default async function PermitsSection({
                     summary={(
                       <>
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs font-medium text-gray-800 truncate block">{p.address ?? 'Address N/A'}</span>
-                          <span className="text-xs text-gray-500 truncate block">
-                            {p.workDescription ?? p.permitType} · {formatDate(p.issueDate)}
+                          <span className="block truncate text-[0.84rem] font-bold text-[var(--ink)]">{p.address ?? 'Address N/A'}</span>
+                          <span className="block truncate text-[0.68rem] uppercase tracking-[0.14em] text-[var(--muted)]">
+                            {compactWorkLabel} · {formatDate(p.issueDate)}
                           </span>
                         </div>
-                        <span className="text-xs font-semibold text-gray-900 flex-shrink-0">{formatCurrency(p.totalFee)}</span>
+                        <span className="flex-shrink-0 text-[0.74rem] font-bold text-[var(--ink)]">{formatCurrency(p.totalFee)}</span>
                       </>
                     )}
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {shouldShowExpandedText(p.address) && (
                         <div>
-                          <div className="font-medium text-gray-700">Address</div>
+                          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Address</div>
                           <div className="expandable-row-text">{p.address}</div>
                         </div>
                       )}
-                      <div><span className="font-medium text-gray-700">Permit No.:</span> {p.permitNumber}</div>
+                      <div><span className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Permit No.:</span> {p.permitNumber}</div>
                       {hasDistinctWorkDescription(p.permitType, expandedWorkDescription) && (
                         <div>
-                          <div className="font-medium text-gray-700">Type</div>
+                          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Type</div>
                           <div className="expandable-row-text">{p.permitType}</div>
                         </div>
                       )}
                       {expandedWorkDescription && (
                         <div>
-                          <div className="font-medium text-gray-700">Work</div>
+                          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Work</div>
                           <div className="expandable-row-text">{expandedWorkDescription}</div>
                         </div>
                       )}
                       {p.contactName && (
                         <div>
-                          <div className="font-medium text-gray-700">Contact</div>
+                          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Contact</div>
                           <div className="expandable-row-text">{p.contactName}</div>
                         </div>
                       )}
@@ -173,11 +175,12 @@ export default async function PermitsSection({
 
           {visibleRegular.length > 0 && (
             <>
-              <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 border-t border-t-gray-200">
+              <div className="border-b border-t border-[rgba(17,17,17,0.18)] px-5 py-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">
                 {view === 'full' ? 'All Permits' : 'Recent Permits'}
               </div>
               {visibleRegular.map((p) => {
                 const expandedWorkDescription = getExpandedWorkDescription(p.workDescription, p.fullWorkDescription)
+                const compactPermitLabel = shortenCompactLabel(p.permitType) || p.permitType
 
                 return (
                   <ExpandableRow
@@ -185,34 +188,34 @@ export default async function PermitsSection({
                     summary={(
                       <>
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs text-gray-800 truncate block">{p.address ?? 'Address N/A'}</span>
-                          <span className="text-xs text-gray-400 truncate block">
-                            {p.permitType} · {formatDate(p.issueDate)}
+                          <span className="block truncate text-[0.82rem] text-[var(--ink)]">{p.address ?? 'Address N/A'}</span>
+                          <span className="block truncate text-[0.68rem] uppercase tracking-[0.14em] text-[var(--muted)]">
+                            {compactPermitLabel} · {formatDate(p.issueDate)}
                           </span>
                         </div>
                         {p.totalFee !== null && (
-                          <span className="text-xs text-gray-600 flex-shrink-0">{formatCurrency(p.totalFee)}</span>
+                          <span className="flex-shrink-0 text-[0.72rem] font-bold text-[var(--muted)]">{formatCurrency(p.totalFee)}</span>
                         )}
                       </>
                     )}
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {shouldShowExpandedText(p.address) && (
                         <div>
-                          <div className="font-medium text-gray-700">Address</div>
+                          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Address</div>
                           <div className="expandable-row-text">{p.address}</div>
                         </div>
                       )}
-                      <div><span className="font-medium text-gray-700">Permit No.:</span> {p.permitNumber}</div>
+                      <div><span className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Permit No.:</span> {p.permitNumber}</div>
                       {hasDistinctWorkDescription(p.permitType, expandedWorkDescription) && (
                         <div>
-                          <div className="font-medium text-gray-700">Work</div>
+                          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Work</div>
                           <div className="expandable-row-text">{expandedWorkDescription}</div>
                         </div>
                       )}
                       {p.contactName && (
                         <div>
-                          <div className="font-medium text-gray-700">Contact</div>
+                          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Contact</div>
                           <div className="expandable-row-text">{p.contactName}</div>
                         </div>
                       )}

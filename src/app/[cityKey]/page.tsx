@@ -37,59 +37,60 @@ export default function CityPage({ params }: Props) {
   })
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 py-4">
-      <div className="text-xs text-gray-500 mb-3">
-        <a href="/" className="text-blue-700 hover:underline">Home</a>
-        <span className="mx-1.5">›</span>
-        <span>{city.displayName}</span>
-      </div>
+    <div className="page-shell space-y-8">
+      <section className="page-rule grid gap-6 lg:grid-cols-[10rem_minmax(0,1fr)]">
+        <div className="page-rail">
+          <div className="page-kicker">City</div>
+          <div className="breadcrumbs">
+            <a href="/">Home</a>
+            <span className="breadcrumbs-sep">/</span>
+            <span>{city.displayName}</span>
+          </div>
+        </div>
 
-      <div className="border border-gray-300 p-4 mb-4">
-        <h1 className="text-base font-bold text-gray-900">{city.displayName}, {city.state}</h1>
-        <p className="mt-0.5 text-xs text-gray-500">
-          {city.districtCount} {city.districtName}s · City budget, legislation, and district lookup
-        </p>
-      </div>
+        <div className="space-y-4">
+          <h1 className="page-title">{city.displayName}</h1>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_24rem] gap-4 mb-4 items-start">
-        <div className="order-1 lg:order-none flex flex-col gap-4 self-start">
-          <div className="panel">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
+        <div className="space-y-6">
+          <div className="panel panel-accent-red">
             <div className="panel-header">
-              <span>Search by zip</span>
+              <span>Search by ZIP</span>
             </div>
-            <div className="p-3">
+            <div className="px-5 pb-5 pt-4">
               <AddressSearch
                 cityKey={city.key}
                 cityName={city.displayName}
                 districtLinks={districtLinks}
-                placeholder="Enter zip code"
+                placeholder="Enter ZIP code"
                 browseLabel={`Browse by ${city.districtName}`}
                 zipSuggestions={getZipSuggestions(city.key)}
               />
             </div>
           </div>
 
-          <div className="panel overflow-hidden">
+          <div className="panel panel-accent-blue overflow-hidden">
             <div className="panel-header">
               <span>Select from map</span>
-              <span className="text-gray-500 font-normal">Click a district to open it</span>
             </div>
             <CityDistrictMap cityKey={city.key} districtName={city.districtName} />
           </div>
         </div>
 
-        <div className="order-3 lg:order-none self-start">
+        <div className="self-start">
           <Suspense fallback={<SectionSkeleton lines={6} />}>
             <BudgetSection cityKey={city.key} />
           </Suspense>
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-4">
+      <section className="space-y-6">
         <Suspense fallback={<SectionSkeleton lines={5} />}>
           <AgendaSection cityKey={city.key} />
         </Suspense>
-      </div>
+      </section>
     </div>
   )
 }

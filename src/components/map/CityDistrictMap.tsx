@@ -86,10 +86,10 @@ export default function CityDistrictMap({ cityKey, districtName }: Props) {
           const feature = geometryToFeature(district.geometry, { districtId: district.districtId })
           const geoLayer = L.geoJSON(feature as GeoJSON.GeoJsonObject, {
             style: {
-              color: '#1d4ed8',
+              color: '#111111',
               weight: 1,
-              fillColor: '#93c5fd',
-              fillOpacity: 0.18,
+              fillColor: '#d7d2c6',
+              fillOpacity: 0.3,
             },
           })
 
@@ -103,14 +103,18 @@ export default function CityDistrictMap({ cityKey, districtName }: Props) {
           geoLayer.on('mouseover', () => {
             geoLayer.setStyle({
               weight: 2,
-              fillOpacity: 0.32,
+              color: '#0057ff',
+              fillColor: '#0057ff',
+              fillOpacity: 0.88,
             })
           })
 
           geoLayer.on('mouseout', () => {
             geoLayer.setStyle({
               weight: 1,
-              fillOpacity: 0.18,
+              color: '#111111',
+              fillColor: '#d7d2c6',
+              fillOpacity: 0.3,
             })
           })
 
@@ -147,17 +151,17 @@ export default function CityDistrictMap({ cityKey, districtName }: Props) {
   }, [cityKey, mapReady, router])
 
   return (
-    <div className="relative h-[28rem] w-full bg-slate-50">
+    <div className="relative h-[30rem] w-full bg-[#e7dfcf]">
       <div ref={mapRef} className="h-full w-full" aria-label={`${districtName} map`} />
 
       {isLoading && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/70 text-xs text-gray-500">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[rgba(251,248,241,0.78)] text-[0.72rem] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">
           Loading districts...
         </div>
       )}
 
       {error && (
-        <div className="absolute inset-x-3 bottom-3 border border-red-200 bg-white/95 px-3 py-2 text-xs text-red-600">
+        <div className="absolute inset-x-3 bottom-3 border-2 border-[var(--red)] bg-[rgba(251,248,241,0.96)] px-3 py-2 text-[0.72rem] uppercase tracking-[0.16em] text-[var(--red)]">
           {error}
         </div>
       )}

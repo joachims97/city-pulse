@@ -93,30 +93,28 @@ export default function WardSectionTablePage({ params, searchParams }: Props) {
   const districtDisplayName = getDistrictDisplayName(city, wardId)
 
   return (
-    <div className="w-full px-4 py-4">
-      <div className="text-xs text-gray-500 mb-3">
-        <a href="/" className="text-blue-700 hover:underline">Home</a>
-        <span className="mx-1.5">›</span>
-        <a href={`/${city.key}`} className="text-blue-700 hover:underline">{city.displayName}</a>
-        <span className="mx-1.5">›</span>
-        <a href={`/${city.key}/ward/${wardId}`} className="text-blue-700 hover:underline">{districtDisplayName}</a>
-        <span className="mx-1.5">›</span>
-        <span>{sectionLabel}</span>
-      </div>
-
-      <div className="border border-gray-300 px-3 py-2 mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-sm font-bold text-gray-900">
-            {city.displayName} — {districtDisplayName} — {sectionLabel}
-          </h1>
-          <p className="text-xs text-gray-500 mt-0.5">{getTimeWindowLabel(params.section, resolvedDays)}</p>
+    <div className="page-shell space-y-6">
+      <section className="page-rule grid gap-6 lg:grid-cols-[10rem_minmax(0,1fr)]">
+        <div className="page-rail">
+          <div className="page-kicker">{city.districtName}</div>
+          <div className="breadcrumbs">
+            <a href="/">Home</a>
+            <span className="breadcrumbs-sep">/</span>
+            <a href={`/${city.key}`}>{city.displayName}</a>
+            <span className="breadcrumbs-sep">/</span>
+            <a href={`/${city.key}/ward/${wardId}`}>{districtDisplayName}</a>
+            <span className="breadcrumbs-sep">/</span>
+            <span>{sectionLabel}</span>
+          </div>
         </div>
-        <a href={`/${city.key}/ward/${wardId}`} className="text-xs text-blue-700 hover:underline">
-          Close full screen
-        </a>
-      </div>
 
-      <div className="w-full">
+        <div className="space-y-3">
+          <h1 className="page-title max-w-[12ch]">{sectionLabel}</h1>
+          <p className="page-subtitle">{getTimeWindowLabel(params.section, resolvedDays)}.</p>
+        </div>
+      </section>
+
+      <div>
         {params.section === 'complaints' && (
           <ComplaintsSection
             wardId={wardId}
