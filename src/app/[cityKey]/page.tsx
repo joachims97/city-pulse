@@ -53,8 +53,8 @@ export default function CityPage({ params }: Props) {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
-        <div className="space-y-6">
+      <div className="city-dashboard-layout">
+        <section className="city-dashboard-main space-y-6">
           <div className="panel panel-accent-red">
             <div className="panel-header">
               <span>Search by ZIP</span>
@@ -77,20 +77,21 @@ export default function CityPage({ params }: Props) {
             </div>
             <CityDistrictMap cityKey={city.key} districtName={city.districtName} />
           </div>
-        </div>
+        </section>
 
-        <div className="self-start">
+        <section className="city-dashboard-legislation space-y-6">
+          <Suspense fallback={<SectionSkeleton lines={5} />}>
+            <AgendaSection cityKey={city.key} />
+          </Suspense>
+        </section>
+
+        <div className="city-dashboard-budget">
           <Suspense fallback={<SectionSkeleton lines={6} />}>
             <BudgetSection cityKey={city.key} />
           </Suspense>
         </div>
-      </section>
+      </div>
 
-      <section className="space-y-6">
-        <Suspense fallback={<SectionSkeleton lines={5} />}>
-          <AgendaSection cityKey={city.key} />
-        </Suspense>
-      </section>
     </div>
   )
 }

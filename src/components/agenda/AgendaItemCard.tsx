@@ -48,13 +48,18 @@ export default function AgendaItemCard({ item }: { item: AgendaItem }) {
             </div>
           )}
 
-          {(item.matterType || item.matterStatus) && (
+          {(item.matterType || item.matterStatus || hasSummary) && (
             <div className="mb-2 flex flex-wrap items-center gap-1">
               {item.matterType && (
                 <span className="tag tag-gray">{item.matterType}</span>
               )}
               {item.matterStatus && (
                 <span className={`tag ${statusClass}`}>{item.matterStatus}</span>
+              )}
+              {hasSummary && (
+                <span className="text-[0.54rem] font-bold uppercase tracking-[0.18em] text-[rgba(0,87,255,0.62)]">
+                  Summary available
+                </span>
               )}
             </div>
           )}

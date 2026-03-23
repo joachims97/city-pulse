@@ -165,6 +165,20 @@
     min-width: 0;
   }
 
+  .city-dashboard-layout {
+    display: block;
+  }
+
+  .city-dashboard-layout > * + * {
+    margin-top: 1.5rem;
+  }
+
+  .city-dashboard-main,
+  .city-dashboard-legislation,
+  .city-dashboard-budget {
+    min-width: 0;
+  }
+
   .breadcrumbs {
     display: flex;
     flex-wrap: wrap;
@@ -762,6 +776,35 @@
   .stat-value,
   .summary-card-value {
     letter-spacing: -0.06em;
+  }
+}
+
+@media (min-width: 1280px) {
+  .city-dashboard-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) 22rem;
+    grid-template-areas:
+      "main budget"
+      "legislation legislation";
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .city-dashboard-layout > * + * {
+    margin-top: 0;
+  }
+
+  .city-dashboard-main {
+    grid-area: main;
+  }
+
+  .city-dashboard-legislation {
+    grid-area: legislation;
+  }
+
+  .city-dashboard-budget {
+    grid-area: budget;
+    align-self: start;
   }
 }
 
