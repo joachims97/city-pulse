@@ -1,0 +1,70 @@
+name: Charlotte Inspections Backfill
+
+on:
+  schedule:
+    - cron: '47 10 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: Optional ISO date to backfill instead of the default 3-days-prior date
+        required: false
+        type: string
+      remote_delay_ms:
+        description: Optional scraper delay override in milliseconds
+        required: false
+        default: '500'
+        type: string
+      geocode_delay_ms:
+        description: Optional geocode delay override in milliseconds
+        required: false
+        default: '250'
+        type: string
+
+concurrency:
+  group: charlotte-inspections-backfill-${{ github.event_name }}-${{ github.event.inputs.date || 'scheduled' }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TZ: America/New_York
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Resolve target date
+        id: target_date
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            TARGET_DATE="${{ github.event.inputs.date }}"
+          else
+            TARGET_DATE="$(date -d '3 days ago' +%F)"
+          fi
+          echo "target_date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
+          echo "Target date: $TARGET_DATE"
+
+      - name: Run Charlotte inspections backfill
+        env:
+          NODE_ENV: production
+        run: |
+          npm run backfill:charlotte-inspections -- \
+            --date "${{ steps.target_date.outputs.target_date }}" \
+            --refresh-existing \
+            --remote-delay-ms "${{ github.event.inputs.remote_delay_ms || '500' }}" \
+            --geocode-delay-ms "${{ github.event.inputs.geocode_delay_ms || '250' }}"

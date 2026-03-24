@@ -1,5 +1,5 @@
 export function getInspectionDefaultDays(cityKey: string): number {
-  return cityKey === 'philadelphia' ? 90 : 365
+  return cityKey === 'philadelphia' || cityKey === 'charlotte' ? 90 : 365
 }
 
 export function getInspectionTimeWindowLabel(days: number): string {
