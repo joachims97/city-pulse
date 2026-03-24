@@ -2,6 +2,7 @@ import { getAllCities, getCityOrNull } from '@/config/cities'
 import {
   backfillAgendaFullTextCache,
   backfillAgendaSummaryCache,
+  refreshAgendaItems,
 } from '@/services/agendaService'
 
 const DEFAULT_DAYS = 7
@@ -42,6 +43,22 @@ export async function runAgendaBackfill(options: {
   const summaryResults: AgendaCronRunResult['summaryResults'] = []
 
   for (const city of cities) {
+    try {
+      await refreshAgendaItems(city!, 'full')
+    } catch (err) {
+      fullTextResults.push({
+        cityKey: city!.key,
+        fetchedItems: 0,
+        queuedItems: 0,
+        hydrated: 0,
+        skipped: 0,
+        failed: 0,
+        withFullText: 0,
+        error: errorMessage(err),
+      })
+      continue
+    }
+
     try {
       fullTextResults.push(await backfillAgendaFullTextCache(city!, days, limit))
     } catch (err) {
