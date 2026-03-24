@@ -142,6 +142,20 @@ interface AgendaFullTextResult {
   fullTextSourceUrl: string | null
 }
 
+interface StoredAgendaListItem {
+  id: string
+  eventDate: Date
+  eventBodyName: string
+  matterTitle: string
+  matterType: string | null
+  matterStatus: string | null
+  agendaNote: string | null
+  agendaFileUrl: string | null
+  fullText: string | null
+  aiSummary: string | null
+  summarizedAt: Date | null
+}
+
 type AgendaView = 'preview' | 'full'
 
 const LEGISTAR_API_BASE = 'https://webapi.legistar.com/v1'
@@ -149,6 +163,7 @@ const CHICAGO_ELMS_API_BASE = 'https://api.chicityclerkelms.chicago.gov'
 const CHICAGO_ELMS_DETAIL_BASE = 'https://chicityclerkelms.chicago.gov/'
 const DEFAULT_MAX_ITEMS = 12
 const FULL_AGENDA_MAX_ITEMS = 250
+const PREVIEW_AGENDA_DB_WINDOW = 80
 const DEFAULT_STALE_AFTER_DAYS = 120
 const DEFAULT_LA_LOOKBACK_DAYS = 30
 const SUMMARY_DISABLED_CITY_KEYS = new Set(['chicago'])
@@ -156,7 +171,7 @@ const legistarDetailDateCache = new Map<string, string | null>()
 const legistarPublicSourceCache = new Map<string, string | null>()
 
 export async function getAgendaItems(city: CityConfig, view: AgendaView = 'preview'): Promise<AgendaEvent[]> {
-  const cacheKey = `${city.key}:agenda:v9:current:${view}`
+  const cacheKey = `${city.key}:agenda:v10:current:${view}`
 
   return getCached(
     cacheKey,
@@ -173,17 +188,39 @@ async function fetchAgenda(city: CityConfig, view: AgendaView): Promise<AgendaEv
     throw new Error(`Agenda provider not configured for ${city.key}`)
   }
 
+  const stored = await fetchStoredAgendaItems(city, provider, view)
+  if (stored.length) {
+    return stored
+  }
+
+  return refreshAgendaItems(city, view)
+}
+
+export async function refreshAgendaItems(
+  city: CityConfig,
+  view: AgendaView = 'full'
+): Promise<AgendaEvent[]> {
+  const provider = city.agendaProvider ?? createDefaultAgendaProvider(city)
+  if (!provider) {
+    throw new Error(`Agenda provider not configured for ${city.key}`)
+  }
+
   try {
     const { items: rawItems, sourceLabel } = await fetchProviderItems(
       provider,
       view === 'full' ? FULL_AGENDA_MAX_ITEMS : undefined
     )
-    if (!rawItems.length) return []
+    if (!rawItems.length) {
+      await invalidateCache(`${city.key}:agenda:`).catch(() => {})
+      return []
+    }
 
     const bodyName = city.councilBodyName ?? 'City Council'
     const sectionId = `${city.key}:legislation`
 
     const items = await persistAgendaItems(city, sectionId, bodyName, rawItems)
+
+    await invalidateCache(`${city.key}:agenda:`).catch(() => {})
 
     return [{
       eventId: sectionId,
@@ -231,8 +268,6 @@ export async function backfillAgendaSummaryCache(
       failed: 0,
     }
   }
-
-  await getAgendaItems(city, 'full')
 
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - days)
@@ -309,8 +344,6 @@ export async function backfillAgendaFullTextCache(
   days = 180,
   limit?: number
 ): Promise<AgendaFullTextBackfillResult> {
-  await getAgendaItems(city, 'full')
-
   const provider = city.agendaProvider ?? createDefaultAgendaProvider(city)
   if (!provider) {
     return {
@@ -404,6 +437,68 @@ export async function backfillAgendaFullTextCache(
     failed,
     withFullText,
   }
+}
+
+async function fetchStoredAgendaItems(
+  city: CityConfig,
+  provider: AgendaProvider,
+  view: AgendaView
+): Promise<AgendaEvent[]> {
+  const take = view === 'full'
+    ? FULL_AGENDA_MAX_ITEMS
+    : Math.max(provider.maxItems ?? DEFAULT_MAX_ITEMS, PREVIEW_AGENDA_DB_WINDOW)
+
+  let rows: StoredAgendaListItem[] = []
+
+  try {
+    rows = await prisma.agendaItem.findMany({
+      where: { cityKey: city.key },
+      orderBy: { eventDate: 'desc' },
+      take,
+      select: {
+        id: true,
+        eventDate: true,
+        eventBodyName: true,
+        matterTitle: true,
+        matterType: true,
+        matterStatus: true,
+        agendaNote: true,
+        agendaFileUrl: true,
+        fullText: true,
+        aiSummary: true,
+        summarizedAt: true,
+      },
+    })
+  } catch {
+    return []
+  }
+
+  if (!rows.length) return []
+
+  const sectionId = `${city.key}:legislation`
+  const items: AgendaItem[] = rows.map((row) => ({
+    id: row.id,
+    eventId: sectionId,
+    cityKey: city.key,
+    matterTitle: row.matterTitle,
+    matterType: row.matterType,
+    matterStatus: row.matterStatus,
+    matterFile: null,
+    matterDate: row.eventDate.toISOString(),
+    sourceUrl: row.agendaFileUrl,
+    agendaNote: row.agendaNote,
+    hasFullText: Boolean(row.fullText),
+    aiSummary: sanitizeSummaryText(row.aiSummary),
+    summarizedAt: row.summarizedAt?.toISOString() ?? null,
+  }))
+
+  return [{
+    eventId: sectionId,
+    eventDate: latestMatterDate(items),
+    bodyName: rows[0]?.eventBodyName ?? city.councilBodyName ?? 'City Council',
+    location: providerLabel(provider),
+    items,
+  }]
 }
 
 function createDefaultAgendaProvider(city: CityConfig): AgendaProvider | undefined {
@@ -960,6 +1055,11 @@ async function fetchLegistarMatterFullText(
   const matterId = item.eventId.match(/:(\d+)$/)?.[1]
   if (!matterId) return { fullText: null, fullTextSourceUrl: null }
 
+  if (item.agendaFileUrl) {
+    const fromHtml = await fetchLegistarHtmlFullText(item)
+    if (fromHtml.fullText) return fromHtml
+  }
+
   const attachmentsUrl = `${LEGISTAR_API_BASE}/${provider.client}/Matters/${matterId}/Attachments`
   const res = await fetch(attachmentsUrl, {
     headers: { 'User-Agent': 'CityPulse/1.0' },
@@ -997,6 +1097,11 @@ async function fetchLegistarHtmlFullText(
   if (!item.agendaFileUrl) return { fullText: null, fullTextSourceUrl: null }
 
   const html = await fetchText(item.agendaFileUrl)
+  const inlineText = extractLegistarInlineText(html)
+  if (isSubstantiveDocumentText(inlineText)) {
+    return { fullText: inlineText, fullTextSourceUrl: item.agendaFileUrl }
+  }
+
   const candidates = extractLegistarDocumentCandidates(html, item.agendaFileUrl)
   const fromDocuments = await fetchFirstSubstantiveDocumentText(candidates)
   if (fromDocuments.fullText) return fromDocuments
@@ -1099,6 +1204,17 @@ function extractLegistarDocumentCandidates(
 
   return dedupeDocumentCandidates(candidates)
     .sort((a, b) => rankLegistarAttachmentCandidate(a.label, a.url) - rankLegistarAttachmentCandidate(b.label, b.url))
+}
+
+function extractLegistarInlineText(html: string): string | null {
+  const pageTextSection = html.match(
+    /<div id="[^"]*pageText"[^>]*>[\s\S]*?(?=<div id="[^"]*page(?:PublicComments|PrivateComments|Reports)"|$)/i
+  )?.[0]
+
+  if (!pageTextSection) return null
+
+  const textContainer = pageTextSection.match(/<div id="[^"]*divText"[^>]*>([\s\S]*)$/i)?.[1] ?? pageTextSection
+  return extractDocumentTextFromHtml(textContainer)
 }
 
 function extractLADocumentCandidates(
