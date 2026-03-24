@@ -28,7 +28,7 @@ export interface Inspection {
   isRecentFail: boolean
 }
 
-interface StoredPhiladelphiaInspectionRow {
+interface StoredInspectionRow {
   inspectionId: string
   dbaName: string
   address: string | null
@@ -70,7 +70,7 @@ export async function getInspections(
   days = 365,
   view: DataView = 'preview'
 ): Promise<Inspection[]> {
-  const cacheKey = `${city.key}:inspections:v12:ward:${wardId}:${days}d:${view}`
+  const cacheKey = `${city.key}:inspections:v14:ward:${wardId}:${days}d:${view}`
 
   return getCached(
     cacheKey,
@@ -88,8 +88,8 @@ async function fetchInspections(
   days: number,
   view: DataView
 ): Promise<Inspection[]> {
-  if (city.key === 'philadelphia') {
-    return fetchPhiladelphiaInspections(wardId, city, days, view)
+  if (city.key === 'philadelphia' || city.key === 'charlotte') {
+    return fetchStoredInspections(city.key, wardId, days, view)
   }
 
   const datasetSource = city.datasets.inspections
@@ -362,7 +362,7 @@ async function fetchCharlotteHealthInspections(
 ): Promise<Inspection[]> {
   const baseUrl = source.baseUrl ?? 'https://public.cdpehs.com/NCENVPBL/ESTABLISHMENT/ShowESTABLISHMENTTablePage.aspx?ESTTST_CTY=60'
   const cityFilter = source.cityFilter ?? 'CHARLOTTE'
-  const maxRecords = source.maxRecords ?? (view === 'full' ? 250 : 120)
+  const previewMaxRecords = Math.min(source.maxRecords ?? 120, 120)
   const sinceDate = new Date(daysAgo(days))
   const districtGeometry = await getDistrictGeometry(wardId, city)
   if (!districtGeometry) {
@@ -379,7 +379,9 @@ async function fetchCharlotteHealthInspections(
 
   const rows: CharlotteInspectionRow[] = []
   const totalPages = getCharlotteTotalPages(session.html)
-  const maxPages = Math.min(totalPages, Math.max(2, Math.ceil(maxRecords / 50) + 2))
+  const maxPages = view === 'full'
+    ? totalPages
+    : Math.min(totalPages, Math.max(2, Math.ceil(previewMaxRecords / 50) + 2))
 
   for (let pageIndex = 1; pageIndex <= maxPages; pageIndex += 1) {
     const pageRows = parseCharlotteInspectionRows(session.html)
@@ -393,10 +395,10 @@ async function fetchCharlotteHealthInspections(
       }
 
       rows.push(row)
-      if (rows.length >= maxRecords) break
+      if (view !== 'full' && rows.length >= previewMaxRecords) break
     }
 
-    if (rows.length >= maxRecords || reachedOlderRows || pageIndex >= totalPages) {
+    if ((view !== 'full' && rows.length >= previewMaxRecords) || reachedOlderRows || pageIndex >= totalPages) {
       break
     }
 
@@ -649,16 +651,16 @@ function classifyInspectionNotes(
   }
 }
 
-async function fetchPhiladelphiaInspections(
+async function fetchStoredInspections(
+  cityKey: string,
   wardId: number,
-  _city: CityConfig,
   days: number,
   view: DataView
 ): Promise<Inspection[]> {
   const sinceDate = new Date(daysAgo(days))
   const rows = ((await prisma.inspection.findMany({
     where: {
-      cityKey: 'philadelphia',
+      cityKey,
       ward: wardId,
       inspectionDate: {
         gte: sinceDate,
@@ -668,8 +670,8 @@ async function fetchPhiladelphiaInspections(
       { inspectionDate: 'desc' },
       { createdAt: 'desc' },
     ],
-    take: view === 'full' ? 2000 : 400,
-  })) ?? []) as StoredPhiladelphiaInspectionRow[]
+    take: view === 'full' ? 5000 : 400,
+  })) ?? []) as StoredInspectionRow[]
 
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
