@@ -164,6 +164,8 @@ const CHICAGO_ELMS_DETAIL_BASE = 'https://chicityclerkelms.chicago.gov/'
 const DEFAULT_MAX_ITEMS = 12
 const FULL_AGENDA_MAX_ITEMS = 250
 const PREVIEW_AGENDA_DB_WINDOW = 80
+const AGENDA_DB_FILTER_WINDOW_MULTIPLIER = 3
+const MAX_AGENDA_DB_QUERY_WINDOW = 500
 const DEFAULT_STALE_AFTER_DAYS = 120
 const DEFAULT_LA_LOOKBACK_DAYS = 30
 const SUMMARY_DISABLED_CITY_KEYS = new Set(['chicago'])
@@ -171,7 +173,7 @@ const legistarDetailDateCache = new Map<string, string | null>()
 const legistarPublicSourceCache = new Map<string, string | null>()
 
 export async function getAgendaItems(city: CityConfig, view: AgendaView = 'preview'): Promise<AgendaEvent[]> {
-  const cacheKey = `${city.key}:agenda:v10:current:${view}`
+  const cacheKey = `${city.key}:agenda:v11:current:${view}`
 
   return getCached(
     cacheKey,
@@ -210,7 +212,8 @@ export async function refreshAgendaItems(
       provider,
       view === 'full' ? FULL_AGENDA_MAX_ITEMS : undefined
     )
-    if (!rawItems.length) {
+    const ingestibleItems = rawItems.filter((item) => shouldIncludeAgendaDate(item.matterDate, city.timezone))
+    if (!ingestibleItems.length) {
       await invalidateCache(`${city.key}:agenda:`).catch(() => {})
       return []
     }
@@ -218,7 +221,7 @@ export async function refreshAgendaItems(
     const bodyName = city.councilBodyName ?? 'City Council'
     const sectionId = `${city.key}:legislation`
 
-    const items = await persistAgendaItems(city, sectionId, bodyName, rawItems)
+    const items = await persistAgendaItems(city, sectionId, bodyName, ingestibleItems)
 
     await invalidateCache(`${city.key}:agenda:`).catch(() => {})
 
@@ -447,6 +450,7 @@ async function fetchStoredAgendaItems(
   const take = view === 'full'
     ? FULL_AGENDA_MAX_ITEMS
     : Math.max(provider.maxItems ?? DEFAULT_MAX_ITEMS, PREVIEW_AGENDA_DB_WINDOW)
+  const queryTake = Math.min(take * AGENDA_DB_FILTER_WINDOW_MULTIPLIER, MAX_AGENDA_DB_QUERY_WINDOW)
 
   let rows: StoredAgendaListItem[] = []
 
@@ -454,7 +458,7 @@ async function fetchStoredAgendaItems(
     rows = await prisma.agendaItem.findMany({
       where: { cityKey: city.key },
       orderBy: { eventDate: 'desc' },
-      take,
+      take: queryTake,
       select: {
         id: true,
         eventDate: true,
@@ -473,10 +477,14 @@ async function fetchStoredAgendaItems(
     return []
   }
 
-  if (!rows.length) return []
+  const filteredRows = rows
+    .filter((row) => shouldIncludeAgendaDate(row.eventDate, city.timezone))
+    .slice(0, take)
+
+  if (!filteredRows.length) return []
 
   const sectionId = `${city.key}:legislation`
-  const items: AgendaItem[] = rows.map((row) => ({
+  const items: AgendaItem[] = filteredRows.map((row) => ({
     id: row.id,
     eventId: sectionId,
     cityKey: city.key,
@@ -495,7 +503,7 @@ async function fetchStoredAgendaItems(
   return [{
     eventId: sectionId,
     eventDate: latestMatterDate(items),
-    bodyName: rows[0]?.eventBodyName ?? city.councilBodyName ?? 'City Council',
+    bodyName: filteredRows[0]?.eventBodyName ?? city.councilBodyName ?? 'City Council',
     location: providerLabel(provider),
     items,
   }]
@@ -1850,6 +1858,44 @@ function buildMatterNote(entries: Array<[label: string, value: string | null]>):
     .map(([label, value]) => `${label}: ${value}`)
 
   return parts.length ? parts.join('\n') : null
+}
+
+function shouldIncludeAgendaDate(value: string | Date | null, timeZone: string): boolean {
+  if (!value) return true
+
+  const itemKey = formatTimeZoneDateKey(value, timeZone)
+  const tomorrowKey = getTomorrowDateKey(timeZone)
+
+  if (!itemKey || !tomorrowKey) return true
+  return itemKey < tomorrowKey
+}
+
+function getTomorrowDateKey(timeZone: string): string | null {
+  const todayKey = formatTimeZoneDateKey(new Date(), timeZone)
+  if (!todayKey) return null
+
+  const tomorrow = new Date(`${todayKey}T00:00:00.000Z`)
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+  return tomorrow.toISOString().slice(0, 10)
+}
+
+function formatTimeZoneDateKey(value: string | Date, timeZone: string): string | null {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+
+  if (!year || !month || !day) return null
+  return `${year}-${month}-${day}`
 }
 
 function extractMatterNoteValue(note: string, label: string): string | null {
